@@ -13,10 +13,10 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o self-ip .
 FROM alpine:latest
 WORKDIR /app
 # Copy the compiled binary
-COPY --from=builder /app/self-ip /usr/bin/
+COPY --from=builder /app/self-ip /app/self-ip
 
 # Application port
 EXPOSE 3213
 
 # Run the application
-CMD ["/usr/bin/self-ip"]
+CMD ["/app/self-ip"]
