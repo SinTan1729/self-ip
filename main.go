@@ -133,7 +133,14 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 	return jsonData
 }
 
-func basicHandler(w http.ResponseWriter, r *http.Request, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader) {
+func basicHandler(w http.ResponseWriter, r *http.Request, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, apiKey string) {
+	if !checkAuth(apiKey, r.Header.Get("X-API-Key")) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprintf(w, "Unauthorized")
+		return
+	}
+
 	url, err := url.Parse(r.RequestURI)
 	if err != nil {
 		log.Fatal(err)
@@ -167,8 +174,12 @@ func main() {
 	}
 	defer dbASN.Close()
 
+	apiKey, flag := os.LookupEnv("SELF_IP_API_KEY")
+	if !flag {
+		log.Fatal("No API key was provided.")
+	}
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		basicHandler(w, r, dbCity, dbASN)
+		basicHandler(w, r, dbCity, dbASN, apiKey)
 	})
 	fmt.Println("Server running at http://localhost:3213")
 	err = http.ListenAndServe(":3213", nil)

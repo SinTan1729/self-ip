@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/matthewhartstonge/argon2"
 )
 
 func check(err error) {
@@ -65,4 +67,12 @@ func getClientIP(r *http.Request) string {
 	}
 
 	return ip
+}
+
+func checkAuth(key string, provided string) bool {
+	ok, err := argon2.VerifyEncoded([]byte(provided), []byte(key))
+	if err != nil {
+		return false
+	}
+	return ok
 }
