@@ -67,7 +67,6 @@ func getDatabases() {
 			curVer = semver.MustParse("0.0.0")
 		}
 	}
-	fmt.Println(curVer)
 
 	_, err = os.Stat("./maxmind-databases/GeoLite2-City.mmdb")
 	if err != nil {
