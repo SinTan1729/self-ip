@@ -1,3 +1,5 @@
+github.com/Masterminds/semver/v3 v3.5.0 h1:kQceYJfbupGfZOKZQg0kou0DgAKhzDg2NZPAwZ/2OOE=
+github.com/Masterminds/semver/v3 v3.5.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
 github.com/oschwald/maxminddb-golang/v2 v2.6.0 h1:pRlHCdJmc+4uxMOSthmKDt5HOw3JTX8TJZlhyP5ew0w=
 github.com/oschwald/maxminddb-golang/v2 v2.6.0/go.mod h1:sjqpB3z2BZrMduDp9TAUTCkZDoT3nDhixUc4Dge2qRQ=
 github.com/stretchr/testify v1.12.1 h1:EuwCh5fleGS7H32xRwO3wRGT7DxrDhLAT6FF8MpWDWE=

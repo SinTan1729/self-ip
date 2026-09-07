@@ -1,17 +1,131 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/netip"
 	"net/url"
+	"os"
 	"strings"
+	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/oschwald/maxminddb-golang/v2"
 )
+
+func downloadFile(ctx context.Context, url, filename string) error {
+	client := &http.Client{
+		Timeout: 0, // no overall timeout; context controls cancellation
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("download failed: %s", resp.Status)
+	}
+
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Streams directly from network to disk.
+	_, err = io.Copy(file, resp.Body)
+	return err
+}
+
+func check(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func getDatabases() {
+	err := os.MkdirAll("./maxmind-databases", 0755)
+	check(err)
+
+	curVer := semver.MustParse("0.0.0")
+	f, err := os.ReadFile("./maxmind-databases/version")
+	if err == nil {
+		curVer, err = semver.NewVersion(string(f))
+		if err != nil {
+			curVer = semver.MustParse("0.0.0")
+		}
+	}
+	fmt.Println(curVer)
+
+	_, err = os.Stat("./maxmind-databases/GeoLite2-City.mmdb")
+	if err != nil {
+		curVer = semver.MustParse("0.0.0")
+	}
+	_, err = os.Stat("./maxmind-databases/GeoLite2-ASN.mmdb")
+	if err != nil {
+		curVer = semver.MustParse("0.0.0")
+	}
+
+	resp, err := http.Get("https://api.github.com/repos/P3TERX/GeoLite.mmdb/releases/latest")
+	check(err)
+	defer resp.Body.Close()
+	type Release struct {
+		TagName string `json:"tag_name"`
+	}
+	var release Release
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		panic(err)
+	}
+	newVer, err := semver.NewVersion(release.TagName)
+	check(err)
+
+	if newVer.GreaterThan(curVer) {
+		fmt.Println("New version of databases available:", newVer)
+	} else {
+		fmt.Println("Already have the latest databases:", curVer)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	fmt.Println("Downloading GeoLite2-City.mmdb")
+	err = downloadFile(
+		ctx,
+		"https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb",
+		"./maxmind-databases/GeoLite2-City.mmdb.tmp",
+	)
+	check(err)
+	ctx, cancel = context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	fmt.Println("Downloading GeoLite2-ASN.mmdb")
+	err = downloadFile(
+		ctx,
+		"https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-ASN.mmdb",
+		"./maxmind-databases/GeoLite2-ASN.mmdb.tmp",
+	)
+	check(err)
+	err = os.WriteFile("./maxmind-databases/version.tmp", []byte(newVer.Original()), 0644)
+	check(err)
+
+	files := []string{"GeoLite2-City.mmdb", "GeoLite2-ASN.mmdb", "version"}
+	for _, file := range files {
+		err = os.Rename(fmt.Sprintf("./maxmind-databases/%s.tmp", file), fmt.Sprintf("./maxmind-databases/%s", file))
+		check(err)
+	}
+	fmt.Println("Databases updated to version:", newVer)
+}
 
 func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, full bool) []byte {
 	ip, err := netip.ParseAddr(rawIP)
@@ -104,12 +218,14 @@ func basicHandler(w http.ResponseWriter, r *http.Request, dbCity *maxminddb.Read
 }
 
 func main() {
-	dbCity, err := maxminddb.Open("GeoLite2-City.mmdb")
+	getDatabases()
+
+	dbCity, err := maxminddb.Open("./maxmind-databases/GeoLite2-City.mmdb")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer dbCity.Close()
-	dbASN, err := maxminddb.Open("GeoLite2-ASN.mmdb")
+	dbASN, err := maxminddb.Open("./maxmind-databases/GeoLite2-ASN.mmdb")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -118,8 +234,8 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		basicHandler(w, r, dbCity, dbASN)
 	})
-	fmt.Println("Server running at http://localhost:8080")
-	err = http.ListenAndServe(":8080", nil)
+	fmt.Println("Server running at http://localhost:3213")
+	err = http.ListenAndServe(":3213", nil)
 	if err != nil {
 		panic(err)
 	}
