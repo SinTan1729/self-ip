@@ -134,29 +134,33 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 }
 
 func basicHandler(w http.ResponseWriter, r *http.Request, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, apiKey string) {
-	if !checkAuth(apiKey, r.Header.Get("X-API-Key")) {
-		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintf(w, "Unauthorized")
-		return
-	}
-
 	url, err := url.Parse(r.RequestURI)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	clientIP := getClientIP(r)
 	customIP := url.Query().Get("ip")
 	var ip string
 	if customIP != "" {
 		ip = customIP
 	} else {
-		ip = getClientIP(r)
+		ip = clientIP
+	}
+
+	if !checkAuth(apiKey, r.Header.Get("X-API-Key")) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusUnauthorized)
+		log.Printf("!!! Unauthorized access attempted from %s querying %s", clientIP, ip)
+		fmt.Fprintf(w, "Unauthorized")
+		return
 	}
 
 	full := url.Query().Get("full")
 	data := getGeoData(ip, dbCity, dbASN, full == "true")
 	w.Header().Set("Content-Type", "application/json")
+
+	log.Printf("--- Accessed from %s querying %s", clientIP, ip)
 	fmt.Fprintf(w, "%s", data)
 }
 
