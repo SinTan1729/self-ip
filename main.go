@@ -152,21 +152,24 @@ func basicHandler(w http.ResponseWriter, r *http.Request, dbCity *maxminddb.Read
 		ip = clientIP
 	}
 
+	mode := Default
+	modeStr := "Default"
+	switch url.Query().Get("mode") {
+	case "ip_only":
+		mode = IPOnly
+		modeStr = "IPOnly"
+	case "full":
+		mode = Full
+		modeStr = "Full"
+	}
 	if !checkAuth(apiKey, r.Header.Get("X-API-Key")) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusUnauthorized)
-		log.Printf("!!! Unauthorized access attempted from %s querying %s", clientIP, ip)
+		log.Printf("!!! Unauthorized access attempted from %s querying %s in %s mode", clientIP, ip, modeStr)
 		fmt.Fprintf(w, "Unauthorized")
 		return
 	}
 
-	mode := Default
-	switch url.Query().Get("mode") {
-	case "ip_only":
-		mode = IPOnly
-	case "full":
-		mode = Full
-	}
 	data := getGeoData(ip, dbCity, dbASN, mode)
 	if mode != IPOnly {
 		w.Header().Set("Content-Type", "application/json")
@@ -174,7 +177,7 @@ func basicHandler(w http.ResponseWriter, r *http.Request, dbCity *maxminddb.Read
 		w.Header().Set("Content-Type", "text/plain")
 	}
 
-	log.Printf("--- Accessed from %s querying %s", clientIP, ip)
+	log.Printf("--- Accessed from %s querying %s in %s mode", clientIP, ip, modeStr)
 	fmt.Fprintf(w, "%s", data)
 }
 
