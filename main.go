@@ -4,56 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net"
 	"net/http"
 	"net/netip"
 	"net/url"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/oschwald/maxminddb-golang/v2"
 )
-
-func downloadFile(ctx context.Context, url, filename string) error {
-	client := &http.Client{
-		Timeout: 0, // no overall timeout; context controls cancellation
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return err
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("download failed: %s", resp.Status)
-	}
-
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Streams directly from network to disk.
-	_, err = io.Copy(file, resp.Body)
-	return err
-}
-
-func check(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
-}
 
 func getDatabases() {
 	err := os.MkdirAll("./maxmind-databases", 0755)
@@ -171,29 +131,6 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 		log.Fatal(err)
 	}
 	return jsonData
-}
-
-func getClientIP(r *http.Request) string {
-	// Check X-Forwarded-For first (common behind proxies)
-	forwarded := r.Header.Get("X-Forwarded-For")
-	if forwarded != "" {
-		ips := strings.Split(forwarded, ",")
-		return strings.TrimSpace(ips[0])
-	}
-
-	// Check X-Real-IP
-	realIP := r.Header.Get("X-Real-IP")
-	if realIP != "" {
-		return realIP
-	}
-
-	// Fall back to the direct remote address
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-
-	return ip
 }
 
 func basicHandler(w http.ResponseWriter, r *http.Request, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader) {
