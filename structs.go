@@ -1,5 +1,13 @@
 package main
 
+type Mode uint
+
+const (
+	Default Mode = 0
+	IPOnly  Mode = 1
+	Full    Mode = 2
+)
+
 type Names struct {
 	DE   string `maxminddb:"de" json:"de,omitempty"`
 	EN   string `maxminddb:"en" json:"en,omitempty"`

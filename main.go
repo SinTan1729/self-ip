@@ -86,7 +86,7 @@ func getDatabases() {
 	fmt.Println("Databases updated to version:", newVer)
 }
 
-func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, full bool) []byte {
+func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, mode Mode) []byte {
 	ip, err := netip.ParseAddr(rawIP)
 	if err != nil {
 		log.Fatal()
@@ -105,7 +105,11 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 	record.IP = rawIP
 	record.ASN = asn
 
-	if !full {
+	if mode == IPOnly {
+		return []byte(rawIP)
+	}
+
+	if mode == Default {
 		var short shortRecord
 		short.IP = rawIP
 		short.City = record.City.Names.EN
@@ -156,9 +160,19 @@ func basicHandler(w http.ResponseWriter, r *http.Request, dbCity *maxminddb.Read
 		return
 	}
 
-	full := url.Query().Get("full")
-	data := getGeoData(ip, dbCity, dbASN, full == "true")
-	w.Header().Set("Content-Type", "application/json")
+	mode := Default
+	switch url.Query().Get("mode") {
+	case "ip_only":
+		mode = IPOnly
+	case "full":
+		mode = Full
+	}
+	data := getGeoData(ip, dbCity, dbASN, mode)
+	if mode != IPOnly {
+		w.Header().Set("Content-Type", "application/json")
+	} else {
+		w.Header().Set("Content-Type", "text/plain")
+	}
 
 	log.Printf("--- Accessed from %s querying %s", clientIP, ip)
 	fmt.Fprintf(w, "%s", data)
