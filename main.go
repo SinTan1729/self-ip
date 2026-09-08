@@ -42,14 +42,24 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 		short.IP = rawIP
 		short.City = record.City.Names.EN
 		if len(record.Subdivisions) > 0 {
-			short.Region.Name = record.Subdivisions[0].Names.EN
-			short.Region.ISOCode = record.Subdivisions[0].ISOCode
+			short.Region = &RegionInfo{
+				Name:    record.Subdivisions[0].Names.EN,
+				ISOCode: record.Subdivisions[0].ISOCode,
+			}
 		}
-		short.Country.Name = record.Country.Names.EN
-		short.Country.ISOCode = record.Country.ISOCode
-		short.Location.Latitude = record.Location.Latitude
-		short.Location.Longitude = record.Location.Longitude
-		short.Location.Postal = record.Postal.Code
+		if record.Country.Names.EN != "" {
+			short.Country = &RegionInfo{
+				Name:    record.Country.Names.EN,
+				ISOCode: record.Country.ISOCode,
+			}
+		}
+		if record.Location.AccuracyRadius != 0 {
+			short.Location = &LocationInfo{
+				Latitude:  record.Location.Latitude,
+				Longitude: record.Location.Longitude,
+				Postal:    record.Postal.Code,
+			}
+		}
 		short.TimeZone = record.Location.TimeZone
 		if record.ASN.AutonomousSystemNumber > 0 {
 			short.Organization = fmt.Sprintf("A%d %s",

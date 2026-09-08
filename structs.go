@@ -18,24 +18,20 @@ type Names struct {
 	RU   string `maxminddb:"ru" json:"ru,omitempty"`
 	ZHCN string `maxminddb:"zh-CN" json:"zh-CN,omitempty"`
 }
-
 type City struct {
 	GeoNameID uint64 `maxminddb:"geoname_id" json:"geoname_id,omitempty"`
 	Names     Names  `maxminddb:"names" json:"names,omitempty"`
 }
-
 type Continent struct {
 	Code      string `maxminddb:"code" json:"code,omitempty"`
 	GeoNameID uint64 `maxminddb:"geoname_id" json:"geoname_id,omitempty"`
 	Names     Names  `maxminddb:"names" json:"names,omitempty"`
 }
-
 type Country struct {
 	GeoNameID uint64 `maxminddb:"geoname_id" json:"geoname_id,omitempty"`
 	ISOCode   string `maxminddb:"iso_code" json:"iso_code,omitempty"`
 	Names     Names  `maxminddb:"names" json:"names,omitempty"`
 }
-
 type Location struct {
 	AccuracyRadius uint64  `maxminddb:"accuracy_radius" json:"accuracy_radius,omitempty"`
 	Latitude       float64 `maxminddb:"latitude" json:"latitude,omitempty"`
@@ -43,22 +39,18 @@ type Location struct {
 	MetroCode      uint64  `maxminddb:"metro_code" json:"metro_code,omitempty"`
 	TimeZone       string  `maxminddb:"time_zone" json:"time_zone,omitempty"`
 }
-
 type Postal struct {
 	Code string `maxminddb:"code" json:"code,omitempty"`
 }
-
 type Subdivision struct {
 	GeoNameID uint64 `maxminddb:"geoname_id" json:"geoname_id,omitempty"`
 	ISOCode   string `maxminddb:"iso_code" json:"iso_code,omitempty"`
 	Names     Names  `maxminddb:"names" json:"names,omitempty"`
 }
-
 type ASNResponse struct {
 	AutonomousSystemNumber       uint64 `maxminddb:"autonomous_system_number" json:"number,omitempty"`
 	AutonomousSystemOrganization string `maxminddb:"autonomous_system_organization" json:"organization,omitempty"`
 }
-
 type CityResponse struct {
 	IP                string        `json:"ip"`
 	City              City          `maxminddb:"city" json:"city,omitempty"`
@@ -71,24 +63,23 @@ type CityResponse struct {
 	ASN               ASNResponse   `json:"asn,omitempty"`
 }
 
+type RegionInfo struct {
+	Name    string `json:"name,omitempty"`
+	ISOCode string `json:"iso,omitempty"`
+}
+type LocationInfo struct {
+	Latitude  float64 `json:"lat,omitempty"`
+	Longitude float64 `json:"long,omitempty"`
+	Postal    string  `json:"postal,omitempty"`
+}
 type shortRecord struct {
-	IP     string `json:"ip"`
-	City   string `json:"city,omitempty"`
-	Region struct {
-		Name    string `json:"name,omitempty"`
-		ISOCode string `json:"iso,omitempty"`
-	} `json:"region,omitempty"`
-	Country struct {
-		Name    string `json:"name,omitempty"`
-		ISOCode string `json:"iso,omitempty"`
-	} `json:"country,omitempty"`
-	Location struct {
-		Latitude  float64 `json:"lat,omitempty"`
-		Longitude float64 `json:"long,omitempty"`
-		Postal    string  `json:"postal,omitempty"`
-	} `json:"location,omitempty"`
-	TimeZone     string `json:"tz,omitempty"`
-	Organization string `json:"org,omitempty"`
+	IP           string        `json:"ip"`
+	City         string        `json:"city,omitempty"`
+	Region       *RegionInfo   `json:"region,omitempty"`
+	Country      *RegionInfo   `json:"country,omitempty"`
+	Location     *LocationInfo `json:"location,omitempty"`
+	TimeZone     string        `json:"tz,omitempty"`
+	Organization string        `json:"org,omitempty"`
 }
 
 type logWriter struct {
