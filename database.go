@@ -84,6 +84,7 @@ func (d *databaseStore) reload() error {
 }
 
 func getDatabases() {
+	log.Println("Checking for database updates.")
 	err := os.MkdirAll("./maxmind-databases", 0755)
 	check(err)
 
@@ -125,9 +126,9 @@ func getDatabases() {
 	check(err)
 
 	if newVer.GreaterThan(curVer) {
-		fmt.Println("New version of databases available:", newVer)
+		log.Println("New version of databases available:", newVer)
 	} else {
-		fmt.Println("Already have the latest databases:", curVer)
+		log.Println("Already have the latest databases:", curVer)
 		return
 	}
 
@@ -159,7 +160,7 @@ func getDatabases() {
 		}()
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
-		fmt.Println("Downloading", name)
+		log.Println("Downloading", name)
 		if err := downloadFile(ctx, asset.BrowserDownloadURL, tmp); err != nil {
 			return err
 		}
@@ -180,7 +181,7 @@ func getDatabases() {
 		if !bytes.Equal(h.Sum(nil), expectedBytes) {
 			return fmt.Errorf("SHA-256 verification failed for %s", name)
 		}
-		fmt.Println("Verified SHA-256 for", name)
+		log.Println("Verified SHA-256 for", name)
 		verified = true
 		return nil
 	}
@@ -218,7 +219,7 @@ func getDatabases() {
 		check(err)
 	}
 
-	fmt.Println("Databases updated to version:", newVer)
+	log.Println("Databases updated to version:", newVer)
 }
 
 func scheduleDatabaseUpdates(databases *databaseStore) {

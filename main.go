@@ -13,7 +13,7 @@ import (
 	"github.com/oschwald/maxminddb-golang/v2"
 )
 
-var Version = "(Dev)"
+var Version = "unknown"
 
 func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, mode Mode) []byte {
 	ip, err := netip.ParseAddr(rawIP)
@@ -143,12 +143,16 @@ func basicHandler(w http.ResponseWriter, r *http.Request, databases *databaseSto
 func main() {
 	log.SetFlags(0)
 	log.SetOutput(new(logWriter))
+
+	if Version == "unknown" {
+		log.Println(Blue + "Self IP (dev build)" + Reset)
+	} else {
+		log.Printf(Blue+"Self IP v%s\n"+Reset, Version)
+	}
+	log.Println(Blue + "https://github.com/SinTan1729/self-ip" + Reset)
+	log.Println("-----------------")
+
 	getDatabases()
-
-	fmt.Printf("Self IP v%s\n", Version)
-	fmt.Println("https://github.com/SinTan1729/self-ip")
-	fmt.Println("-----------------\n")
-
 	databases := &databaseStore{}
 	if err := databases.reload(); err != nil {
 		log.Fatal(err)
@@ -180,7 +184,7 @@ func main() {
 		}
 	})
 
-	fmt.Println("Server running at http://localhost:3213")
+	log.Println("Server running at http://localhost:3213")
 	if err := http.ListenAndServe(":3213", nil); err != nil {
 		panic(err)
 	}
