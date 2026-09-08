@@ -1,14 +1,19 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/netip"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
@@ -40,8 +45,14 @@ func getDatabases() {
 	resp, err := http.Get("https://api.github.com/repos/P3TERX/GeoLite.mmdb/releases/latest")
 	check(err)
 	defer resp.Body.Close()
+	type Asset struct {
+		Name               string `json:"name"`
+		BrowserDownloadURL string `json:"browser_download_url"`
+		Digest             string `json:"digest"`
+	}
 	type Release struct {
-		TagName string `json:"tag_name"`
+		TagName string  `json:"tag_name"`
+		Assets  []Asset `json:"assets"`
 	}
 	var release Release
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
@@ -57,24 +68,62 @@ func getDatabases() {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-	fmt.Println("Downloading GeoLite2-City.mmdb")
-	err = downloadFile(
-		ctx,
-		"https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb",
-		"./maxmind-databases/GeoLite2-City.mmdb.tmp",
-	)
-	check(err)
-	ctx, cancel = context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-	fmt.Println("Downloading GeoLite2-ASN.mmdb")
-	err = downloadFile(
-		ctx,
-		"https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-ASN.mmdb",
-		"./maxmind-databases/GeoLite2-ASN.mmdb.tmp",
-	)
-	check(err)
+	assets := make(map[string]Asset, len(release.Assets))
+	for _, asset := range release.Assets {
+		assets[asset.Name] = asset
+	}
+
+	downloadAndVerify := func(name string) error {
+		asset, ok := assets[name]
+		if !ok {
+			return fmt.Errorf("release %s does not contain asset %s", release.TagName, name)
+		}
+		expected, ok := strings.CutPrefix(asset.Digest, "sha256:")
+		if !ok || len(expected) != sha256.Size*2 {
+			return fmt.Errorf("release %s has no valid SHA-256 digest for %s", release.TagName, name)
+		}
+		expectedBytes, err := hex.DecodeString(expected)
+		if err != nil {
+			return fmt.Errorf("invalid SHA-256 digest for %s: %w", name, err)
+		}
+
+		tmp := fmt.Sprintf("./maxmind-databases/%s.tmp", name)
+		verified := false
+		defer func() {
+			if !verified {
+				_ = os.Remove(tmp)
+			}
+		}()
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+		fmt.Println("Downloading", name)
+		if err := downloadFile(ctx, asset.BrowserDownloadURL, tmp); err != nil {
+			return err
+		}
+
+		f, err := os.Open(tmp)
+		if err != nil {
+			return err
+		}
+		h := sha256.New()
+		_, copyErr := io.Copy(h, f)
+		closeErr := f.Close()
+		if copyErr != nil {
+			return copyErr
+		}
+		if closeErr != nil {
+			return closeErr
+		}
+		if !bytes.Equal(h.Sum(nil), expectedBytes) {
+			return fmt.Errorf("SHA-256 verification failed for %s", name)
+		}
+		fmt.Println("Verified SHA-256 for", name)
+		verified = true
+		return nil
+	}
+
+	check(downloadAndVerify("GeoLite2-City.mmdb"))
+	check(downloadAndVerify("GeoLite2-ASN.mmdb"))
 	err = os.WriteFile("./maxmind-databases/version.tmp", []byte(newVer.Original()), 0644)
 	check(err)
 
