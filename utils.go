@@ -79,5 +79,5 @@ func checkAuth(key string, provided string) bool {
 }
 
 func (writer logWriter) Write(bytes []byte) (int, error) {
-	return fmt.Print("[" + time.Now().Local().Format("2006-01-02T15:04:05.999Z") + "] " + string(bytes))
+	return fmt.Print("[" + time.Now().Local().Format("2006-01-02T15:04:05.000Z") + "] " + string(bytes))
 }
