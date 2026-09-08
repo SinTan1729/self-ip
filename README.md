@@ -142,5 +142,5 @@ Only the paths `/`, `/json`, `/api` are allowed. The paths don't change the retu
 Any other paths will return:
 
 ```text
-400 Bad Request
+404 Page Not Found
 ```
