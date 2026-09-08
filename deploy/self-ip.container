@@ -1,0 +1,22 @@
+[Unit]
+Description=Self IP
+StartLimitBurst=5
+StartLimitIntervalSec=30m
+
+[Container]
+ContainerName=self-ip
+Image=ghcr.io/sintan1729/self-ip:latest
+AutoUpdate=registry
+# Volumes
+Volume=self-ip:/app/maxmind-databases
+# Environment variables
+# CHANGE IT BEFORE DEPLOYMENT, THIS IS GIBBERISH
+# Make sure that you replace $ with $$ before putting the digest here
+Environment=SELF_IP_API_KEY=$$argon2id$$v=19$$m=16,t=2,p=2$$c3F3ZGFkdsdedadaddasdadscaafhjasajsnjasbfjfas
+
+[Service]
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=default.target

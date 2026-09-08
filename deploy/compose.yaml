@@ -1,0 +1,16 @@
+services:
+  self-ip:
+    container_name: self-ip
+    image: ghcr.io/sintan1729/self-ip:latest
+    restart: on-failure:5
+
+    environment:
+      # CHANGE IT BEFORE DEPLOYMENT, THIS IS GIBBERISH
+      # Make sure that you replace $ with $$ before putting the digest here
+      SELF_IP_API_KEY: "$$argon2id$$v=19$$m=16,t=2,p=2$$c3F3ZGFkdsdedadaddasdadscaafhjasajsnjasbfjfas"
+
+    volumes:
+      - self-ip:/app/maxmind-databases
+
+volumes:
+  self-ip:
