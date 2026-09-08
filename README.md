@@ -1,4 +1,4 @@
-# Self IP API
+# Self IP
 
 A small self-hosted IP geolocation API written in Go.
 
