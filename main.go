@@ -51,9 +51,11 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 		short.Location.Longitude = record.Location.Longitude
 		short.Location.Postal = record.Postal.Code
 		short.TimeZone = record.Location.TimeZone
-		short.Organization = fmt.Sprintf("A%d %s",
-			record.ASN.AutonomousSystemNumber,
-			record.ASN.AutonomousSystemOrganization)
+		if record.ASN.AutonomousSystemNumber > 0 {
+			short.Organization = fmt.Sprintf("A%d %s",
+				record.ASN.AutonomousSystemNumber,
+				record.ASN.AutonomousSystemOrganization)
+		}
 
 		jsonData, err := json.Marshal(short)
 		if err != nil {
