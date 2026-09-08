@@ -95,7 +95,7 @@ curl \
   "http://localhost:3213/?ip=8.8.8.8&mode=ip_only"
 ```
 
-The response content type is `text/plain`.
+The response content type is `text/plain` e.g. `1.2.3.4`.
 
 ### Full mode
 
