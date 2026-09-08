@@ -81,3 +81,35 @@ func checkAuth(key string, provided string) bool {
 func (writer logWriter) Write(bytes []byte) (int, error) {
 	return fmt.Print("[" + time.Now().Local().Format("2006-01-02T15:04:05.000Z") + "] " + string(bytes))
 }
+
+func logText(clientIP string, mode Mode, queryIP string, attemptType uint) string {
+	var prefix string
+	var color string
+	var modeText string
+	var queryText string
+
+	switch attemptType {
+	case GoodAttempt:
+		prefix = "Accessed"
+		color = Green
+	case Unauthorized:
+		prefix = "Unauthorized attempt"
+		color = Red
+	case BadAttempt:
+		prefix = "Bad request"
+		color = Red
+	}
+
+	switch mode {
+	case Full:
+		modeText = ", mode: Full"
+	case IPOnly:
+		modeText = ", mode: IPOnly"
+	}
+
+	if queryIP != clientIP {
+		queryText = ", query: " + queryIP
+	}
+
+	return fmt.Sprintf("%s%s from %s%s%s%s", color, prefix, clientIP, modeText, queryText, Reset)
+}

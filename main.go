@@ -101,39 +101,42 @@ func basicHandler(w http.ResponseWriter, r *http.Request, databases *databaseSto
 
 	clientIP := getClientIP(r)
 	customIP := url.Query().Get("ip")
-	var ip string
+	var queryIP string
 	if customIP != "" {
-		ip = customIP
+		queryIP = customIP
 	} else {
-		ip = clientIP
+		queryIP = clientIP
 	}
 
-	mode := Default
-	modeStr := "Default"
+	var mode Mode
 	switch url.Query().Get("mode") {
 	case "ip_only":
 		mode = IPOnly
-		modeStr = "IPOnly"
 	case "full":
 		mode = Full
-		modeStr = "Full"
-	}
-	if !checkAuth(apiKey, r.Header.Get("X-API-Key")) {
-		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusUnauthorized)
-		log.Printf("!!! Unauthorized access attempted from %s querying %s in %s mode", clientIP, ip, modeStr)
-		fmt.Fprintf(w, "Unauthorized")
+	case "", "default":
+		mode = Default
+	default:
+		log.Println(logText(clientIP, mode, queryIP, BadAttempt))
+		http.Error(w, "400 Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	data := databases.getGeoData(ip, mode)
+	if !checkAuth(apiKey, r.Header.Get("X-API-Key")) {
+		log.Println(logText(clientIP, mode, queryIP, Unauthorized))
+		w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
+		http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	data := databases.getGeoData(queryIP, mode)
 	if mode != IPOnly {
 		w.Header().Set("Content-Type", "application/json")
 	} else {
 		w.Header().Set("Content-Type", "text/plain")
 	}
 
-	log.Printf("--- Accessed from %s querying %s in %s mode", clientIP, ip, modeStr)
+	log.Println(logText(clientIP, mode, queryIP, GoodAttempt))
 	fmt.Fprintf(w, "%s", data)
 }
 
@@ -169,8 +172,14 @@ func main() {
 	go scheduleDatabaseUpdates(databases)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		basicHandler(w, r, databases, apiKey)
+		switch r.URL.Path {
+		case "/", "/json", "/api":
+			basicHandler(w, r, databases, apiKey)
+		default:
+			http.NotFound(w, r)
+		}
 	})
+
 	fmt.Println("Server running at http://localhost:3213")
 	if err := http.ListenAndServe(":3213", nil); err != nil {
 		panic(err)
