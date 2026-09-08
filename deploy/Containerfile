@@ -8,7 +8,18 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o self-ip .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o self-ip .
+ARG GIT_VERSION=""
+
+RUN if [ -n "$GIT_VERSION" ]; then \
+      CGO_ENABLED=0 GOOS=linux go build \
+        -ldflags="-s -w -X main.Version=$GIT_VERSION" \
+        -o self-ip; \
+    else \
+      CGO_ENABLED=0 GOOS=linux go build \
+        -ldflags="-s -w" \
+        -o self-ip; \
+    fi
 
 FROM alpine:latest
 WORKDIR /app

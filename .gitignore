@@ -1,2 +1,3 @@
 *.mmdb
 maxmind-databases/*
+self-ip

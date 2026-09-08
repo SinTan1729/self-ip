@@ -20,6 +20,8 @@ import (
 	"github.com/oschwald/maxminddb-golang/v2"
 )
 
+var Version = "(Dev)"
+
 func getDatabases() {
 	err := os.MkdirAll("./maxmind-databases", 0755)
 	check(err)
@@ -232,6 +234,9 @@ func basicHandler(w http.ResponseWriter, r *http.Request, dbCity *maxminddb.Read
 
 func main() {
 	getDatabases()
+
+	fmt.Printf("Self IP v%s\n", Version)
+	fmt.Println("https://github.com/SinTan1729/self-ip")
 
 	dbCity, err := maxminddb.Open("./maxmind-databases/GeoLite2-City.mmdb")
 	if err != nil {
