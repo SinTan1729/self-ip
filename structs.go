@@ -86,3 +86,6 @@ type shortRecord struct {
 	TimeZone     string `json:"tz,omitempty"`
 	Organization string `json:"org,omitempty"`
 }
+
+type logWriter struct {
+}

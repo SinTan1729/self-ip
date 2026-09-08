@@ -110,6 +110,8 @@ func basicHandler(w http.ResponseWriter, r *http.Request, databases *databaseSto
 }
 
 func main() {
+	log.SetFlags(0)
+	log.SetOutput(new(logWriter))
 	getDatabases()
 
 	fmt.Printf("Self IP v%s\n", Version)

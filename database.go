@@ -180,7 +180,7 @@ func scheduleDatabaseUpdates(databases *databaseStore) {
 			next = next.AddDate(0, 0, 1)
 		}
 
-		log.Printf("Next database update scheduled for %s", next.Format(time.RFC3339))
+		log.Printf("Next database update scheduled for %s", next.Local().Format(time.RFC3339))
 		time.Sleep(time.Until(next))
 
 		log.Println("Running scheduled database update")
