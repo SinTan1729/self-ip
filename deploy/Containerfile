@@ -21,15 +21,12 @@ RUN if [ -n "$GIT_VERSION" ]; then \
         -o self-ip; \
     fi
 
+# Release container
 FROM alpine:latest
 RUN apk add --no-cache tzdata
 
 WORKDIR /app
-# Copy the compiled binary
 COPY --from=builder /app/self-ip /app/self-ip
 
-# Application port
 EXPOSE 3213
-
-# Run the application
 CMD ["/app/self-ip"]
