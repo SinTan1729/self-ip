@@ -6,6 +6,11 @@ on:
       - main
     tags:
       - "*"
+    paths:
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+      - ".github/workflows/**"
 
 permissions:
   contents: read
