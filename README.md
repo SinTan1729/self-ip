@@ -23,11 +23,12 @@ Then, they're checked once a day at 2am.
 ## Installation
 
 The recommended method of installation is using containers e.g. Docker or Podman. Example `docker compose` and `podman quadlet` files
-are provided in the [deploy](`./deploy`) directory.
+are provided in the [`deploy`](./deploy) directory.
 
 ## API
 
 All requests require the `X-API-Key` header. The API Key has to be [`Argon2id`](https://www.argon2.com) encrypted. Check the deployment files for some notes. The following can be used to generate an API key.
+
 ```bash
 openssl rand -hex 32
 ```
