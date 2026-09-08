@@ -175,7 +175,7 @@ func getDatabases() {
 func scheduleDatabaseUpdates(databases *databaseStore) {
 	for {
 		now := time.Now()
-		next := time.Date(now.Year(), now.Month(), now.Day(), 2, rand.IntN(10)-5, rand.IntN(60)-30, 0, now.Location())
+		next := time.Date(now.Year(), now.Month(), now.Day(), 7, rand.IntN(10)-5, rand.IntN(60)-30, 0, now.Location())
 		if !next.After(now) {
 			next = next.AddDate(0, 0, 1)
 		}

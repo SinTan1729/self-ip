@@ -18,7 +18,7 @@ It is highly recommended that you use it behind a reverse proxy e.g. [Caddy](htt
 ## Database Updates
 
 On startup, the server checks the latest release of the [P3TERX/GeoLite.mmdb](https://github.com/P3TERX/GeoLite.mmdb) repository.
-Then, they're checked once a day around 2am.
+Then, they're checked once a day around 7am.
 
 ## Installation
 
