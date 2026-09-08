@@ -237,6 +237,7 @@ func main() {
 
 	fmt.Printf("Self IP v%s\n", Version)
 	fmt.Println("https://github.com/SinTan1729/self-ip")
+	fmt.Println("-----------------\n")
 
 	dbCity, err := maxminddb.Open("./maxmind-databases/GeoLite2-City.mmdb")
 	if err != nil {
