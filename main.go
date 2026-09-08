@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
@@ -188,7 +189,44 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 	return jsonData
 }
 
-func basicHandler(w http.ResponseWriter, r *http.Request, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, apiKey string) {
+type databaseStore struct {
+	mu     sync.RWMutex
+	dbCity *maxminddb.Reader
+	dbASN  *maxminddb.Reader
+}
+
+func (d *databaseStore) getGeoData(rawIP string, mode Mode) []byte {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return getGeoData(rawIP, d.dbCity, d.dbASN, mode)
+}
+
+func (d *databaseStore) reload() error {
+	newCity, err := maxminddb.Open("./maxmind-databases/GeoLite2-City.mmdb")
+	if err != nil {
+		return err
+	}
+	newASN, err := maxminddb.Open("./maxmind-databases/GeoLite2-ASN.mmdb")
+	if err != nil {
+		_ = newCity.Close()
+		return err
+	}
+
+	d.mu.Lock()
+	oldCity, oldASN := d.dbCity, d.dbASN
+	d.dbCity, d.dbASN = newCity, newASN
+	d.mu.Unlock()
+
+	if oldCity != nil {
+		_ = oldCity.Close()
+	}
+	if oldASN != nil {
+		_ = oldASN.Close()
+	}
+	return nil
+}
+
+func basicHandler(w http.ResponseWriter, r *http.Request, databases *databaseStore, apiKey string) {
 	url, err := url.Parse(r.RequestURI)
 	if err != nil {
 		log.Fatal(err)
@@ -221,7 +259,7 @@ func basicHandler(w http.ResponseWriter, r *http.Request, dbCity *maxminddb.Read
 		return
 	}
 
-	data := getGeoData(ip, dbCity, dbASN, mode)
+	data := databases.getGeoData(ip, mode)
 	if mode != IPOnly {
 		w.Header().Set("Content-Type", "application/json")
 	} else {
@@ -232,6 +270,27 @@ func basicHandler(w http.ResponseWriter, r *http.Request, dbCity *maxminddb.Read
 	fmt.Fprintf(w, "%s", data)
 }
 
+func scheduleDatabaseUpdates(databases *databaseStore) {
+	for {
+		now := time.Now()
+		next := time.Date(now.Year(), now.Month(), now.Day(), 2, 0, 0, 0, now.Location())
+		if !next.After(now) {
+			next = next.AddDate(0, 0, 1)
+		}
+
+		log.Printf("Next database update scheduled for %s", next.Format(time.RFC3339))
+		time.Sleep(time.Until(next))
+
+		log.Println("Running scheduled database update")
+		getDatabases()
+		if err := databases.reload(); err != nil {
+			log.Printf("Database reload failed: %v", err)
+			continue
+		}
+		log.Println("Scheduled database update completed")
+	}
+}
+
 func main() {
 	getDatabases()
 
@@ -239,27 +298,33 @@ func main() {
 	fmt.Println("https://github.com/SinTan1729/self-ip")
 	fmt.Println("-----------------\n")
 
-	dbCity, err := maxminddb.Open("./maxmind-databases/GeoLite2-City.mmdb")
-	if err != nil {
+	databases := &databaseStore{}
+	if err := databases.reload(); err != nil {
 		log.Fatal(err)
 	}
-	defer dbCity.Close()
-	dbASN, err := maxminddb.Open("./maxmind-databases/GeoLite2-ASN.mmdb")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer dbASN.Close()
+	defer func() {
+		databases.mu.Lock()
+		defer databases.mu.Unlock()
+		if databases.dbCity != nil {
+			_ = databases.dbCity.Close()
+		}
+		if databases.dbASN != nil {
+			_ = databases.dbASN.Close()
+		}
+	}()
 
 	apiKey, flag := os.LookupEnv("SELF_IP_API_KEY")
 	if !flag {
 		log.Fatal("No API key was provided.")
 	}
+
+	go scheduleDatabaseUpdates(databases)
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		basicHandler(w, r, dbCity, dbASN, apiKey)
+		basicHandler(w, r, databases, apiKey)
 	})
 	fmt.Println("Server running at http://localhost:3213")
-	err = http.ListenAndServe(":3213", nil)
-	if err != nil {
+	if err := http.ListenAndServe(":3213", nil); err != nil {
 		panic(err)
 	}
 }
