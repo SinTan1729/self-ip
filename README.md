@@ -135,3 +135,12 @@ Requests without a valid key receive:
 ```text
 401 Unauthorized
 ```
+
+## Allowed paths
+
+Only the paths `/`, `/json`, `/api` are allowed. The paths don't change the returned value.
+Any other paths will return:
+
+```text
+400 Bad Request
+```
