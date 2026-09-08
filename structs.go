@@ -72,8 +72,12 @@ type CityResponse struct {
 }
 
 type shortRecord struct {
-	IP      string `json:"ip"`
-	City    string `json:"city,omitempty"`
+	IP     string `json:"ip"`
+	City   string `json:"city,omitempty"`
+	Region struct {
+		Name    string `json:"name,omitempty"`
+		ISOCode string `json:"iso,omitempty"`
+	} `json:"region,omitempty"`
 	Country struct {
 		Name    string `json:"name,omitempty"`
 		ISOCode string `json:"iso,omitempty"`

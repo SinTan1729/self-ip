@@ -41,6 +41,10 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 		var short shortRecord
 		short.IP = rawIP
 		short.City = record.City.Names.EN
+		if len(record.Subdivisions) > 0 {
+			short.Region.Name = record.Subdivisions[0].Names.EN
+			short.Region.ISOCode = record.Subdivisions[0].ISOCode
+		}
 		short.Country.Name = record.Country.Names.EN
 		short.Country.ISOCode = record.Country.ISOCode
 		short.Location.Latitude = record.Location.Latitude

@@ -63,6 +63,10 @@ The default response returns a compact JSON representation containing informatio
 {
   "ip": "1.2.3.4",
   "city": "Example City",
+  "region": {
+    "name": "Example Region",
+    "iso": "EX"
+  },
   "country": {
     "name": "Example Country",
     "iso": "EX"
