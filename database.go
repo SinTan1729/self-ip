@@ -33,19 +33,44 @@ func (d *databaseStore) getGeoData(rawIP string, mode Mode) []byte {
 }
 
 func (d *databaseStore) reload() error {
-	newCity, err := maxminddb.Open("./maxmind-databases/GeoLite2-City.mmdb")
-	if err != nil {
-		return err
+	type result struct {
+		city *maxminddb.Reader
+		asn  *maxminddb.Reader
+		err  error
 	}
-	newASN, err := maxminddb.Open("./maxmind-databases/GeoLite2-ASN.mmdb")
-	if err != nil {
-		_ = newCity.Close()
-		return err
+
+	cityCh := make(chan result, 1)
+	asnCh := make(chan result, 1)
+	go func() {
+		db, err := maxminddb.Open(
+			"./maxmind-databases/GeoLite2-City.mmdb",
+		)
+		cityCh <- result{city: db, err: err}
+	}()
+	go func() {
+		db, err := maxminddb.Open(
+			"./maxmind-databases/GeoLite2-ASN.mmdb",
+		)
+		asnCh <- result{asn: db, err: err}
+	}()
+
+	cityResult := <-cityCh
+	asnResult := <-asnCh
+	if cityResult.err != nil {
+		if asnResult.asn != nil {
+			_ = asnResult.asn.Close()
+		}
+		return cityResult.err
+	}
+	if asnResult.err != nil {
+		_ = cityResult.city.Close()
+		return asnResult.err
 	}
 
 	d.mu.Lock()
 	oldCity, oldASN := d.dbCity, d.dbASN
-	d.dbCity, d.dbASN = newCity, newASN
+	d.dbCity = cityResult.city
+	d.dbASN = asnResult.asn
 	d.mu.Unlock()
 
 	if oldCity != nil {
@@ -54,6 +79,7 @@ func (d *databaseStore) reload() error {
 	if oldASN != nil {
 		_ = oldASN.Close()
 	}
+
 	return nil
 }
 
@@ -159,16 +185,39 @@ func getDatabases() {
 		return nil
 	}
 
-	check(downloadAndVerify("GeoLite2-City.mmdb"))
-	check(downloadAndVerify("GeoLite2-ASN.mmdb"))
+	var wg sync.WaitGroup
+	errCh := make(chan error, 2)
+
+	filesToDownload := []string{
+		"GeoLite2-City.mmdb",
+		"GeoLite2-ASN.mmdb",
+	}
+
+	for _, name := range filesToDownload {
+		wg.Add(1)
+
+		go func(name string) {
+			defer wg.Done()
+
+			if err := downloadAndVerify(name); err != nil {
+				errCh <- err
+			}
+		}(name)
+	}
+
+	wg.Wait()
+	close(errCh)
+	for err := range errCh {
+		check(err)
+	}
 	err = os.WriteFile("./maxmind-databases/version.tmp", []byte(newVer.Original()), 0644)
 	check(err)
-
 	files := []string{"GeoLite2-City.mmdb", "GeoLite2-ASN.mmdb", "version"}
 	for _, file := range files {
 		err = os.Rename(fmt.Sprintf("./maxmind-databases/%s.tmp", file), fmt.Sprintf("./maxmind-databases/%s", file))
 		check(err)
 	}
+
 	fmt.Println("Databases updated to version:", newVer)
 }
 

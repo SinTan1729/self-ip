@@ -8,6 +8,7 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"sync"
 
 	"github.com/oschwald/maxminddb-golang/v2"
 )
@@ -20,14 +21,26 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 		log.Fatal()
 	}
 
-	var record CityResponse
-	var asn ASNResponse
-	err = dbCity.Lookup(ip).Decode(&record)
-	if err != nil {
-		return nil
-	}
-	err = dbASN.Lookup(ip).Decode(&asn)
-	if err != nil {
+	var (
+		record  CityResponse
+		asn     ASNResponse
+		cityErr error
+		asnErr  error
+		wg      sync.WaitGroup
+	)
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		cityErr = dbCity.Lookup(ip).Decode(&record)
+	}()
+	go func() {
+		defer wg.Done()
+		asnErr = dbASN.Lookup(ip).Decode(&asn)
+	}()
+
+	wg.Wait()
+	if cityErr != nil || asnErr != nil {
 		return nil
 	}
 	record.IP = rawIP
@@ -36,7 +49,6 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 	if mode == IPOnly {
 		return []byte(rawIP)
 	}
-
 	if mode == Default {
 		var short shortRecord
 		short.IP = rawIP
