@@ -13,6 +13,7 @@ Volume=self-ip:/app/maxmind-databases
 # CHANGE IT BEFORE DEPLOYMENT, THIS IS GIBBERISH
 # Make sure that you replace $ with $$ before putting the digest here
 Environment=SELF_IP_API_KEY=$$argon2id$$v=19$$m=16,t=2,p=2$$c3F3ZGFkdsdedadaddasdadscaafhjasajsnjasbfjfas
+Environment=TZ=Asia/Kolkata
 
 [Service]
 Restart=on-failure
