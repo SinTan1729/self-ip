@@ -147,7 +147,7 @@ func main() {
 	if Version == "unknown" {
 		log.Println(Blue + "Self IP (dev build)" + Reset)
 	} else {
-		log.Printf(Blue+"Self IP v%s\n"+Reset, Version)
+		log.Printf(Blue+"Self IP v%s"+Reset, Version)
 	}
 	log.Println(Blue + "https://github.com/SinTan1729/self-ip" + Reset)
 	log.Println("-----------------")
