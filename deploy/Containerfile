@@ -22,6 +22,8 @@ RUN if [ -n "$GIT_VERSION" ]; then \
     fi
 
 FROM alpine:latest
+RUN apk add --no-cache tzdata
+
 WORKDIR /app
 # Copy the compiled binary
 COPY --from=builder /app/self-ip /app/self-ip
