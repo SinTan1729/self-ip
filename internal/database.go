@@ -26,10 +26,10 @@ type DatabaseStore struct {
 	dbASN  *maxminddb.Reader
 }
 
-func (d *DatabaseStore) GetGeoData(rawIP string, mode Mode) []byte {
+func (d *DatabaseStore) GetGeoData(rawIP string, mode Mode, userAgent string) []byte {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
-	return getGeoData(rawIP, d.dbCity, d.dbASN, mode)
+	return getGeoData(rawIP, d.dbCity, d.dbASN, mode, userAgent)
 }
 
 func (d *DatabaseStore) Close() {

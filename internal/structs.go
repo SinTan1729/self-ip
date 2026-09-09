@@ -1,11 +1,14 @@
 package internal
 
+import "math/big"
+
 type Mode uint
 
 const (
 	Default Mode = 0
 	IPOnly  Mode = 1
-	Full    Mode = 2
+	EchoIP  Mode = 2
+	Full    Mode = 3
 )
 
 type names struct {
@@ -51,7 +54,13 @@ type asnResponse struct {
 	AutonomousSystemNumber       uint64 `maxminddb:"autonomous_system_number" json:"number,omitempty"`
 	AutonomousSystemOrganization string `maxminddb:"autonomous_system_organization" json:"organization,omitempty"`
 }
-type cityResponse struct {
+type userAgent struct {
+	Product  string `json:"product,omitempty"`
+	Version  string `json:"version,omitempty"`
+	Comment  string `json:"comment,omitempty"`
+	RawValue string `json:"raw_value,omitempty"`
+}
+type fullResponse struct {
 	IP                string        `json:"ip"`
 	City              city          `maxminddb:"city" json:"city,omitempty"`
 	Continent         continent     `maxminddb:"continent" json:"continent,omitempty"`
@@ -61,6 +70,7 @@ type cityResponse struct {
 	RegisteredCountry country       `maxminddb:"registered_country" json:"registered_country,omitempty"`
 	Subdivisions      []subdivision `maxminddb:"subdivisions" json:"subdivisions,omitempty"`
 	ASN               asnResponse   `json:"asn,omitempty"`
+	UserAgent         userAgent     `json:"user_agent,omitempty"`
 }
 
 type regionInfo struct {
@@ -72,7 +82,7 @@ type locationInfo struct {
 	Longitude float64 `json:"long,omitempty"`
 	Postal    string  `json:"postal,omitempty"`
 }
-type shortRecord struct {
+type defaultResponse struct {
 	IP           string        `json:"ip"`
 	City         string        `json:"city,omitempty"`
 	Region       *regionInfo   `json:"region,omitempty"`
@@ -80,6 +90,31 @@ type shortRecord struct {
 	Location     *locationInfo `json:"location,omitempty"`
 	TimeZone     string        `json:"tz,omitempty"`
 	Organization string        `json:"org,omitempty"`
+}
+
+type JSONBigInt big.Int
+
+func (n JSONBigInt) MarshalJSON() ([]byte, error) {
+	return []byte((*big.Int)(&n).String()), nil
+}
+
+type echoIPResponse struct {
+	IP         string      `json:"ip"`
+	IPDecimal  *JSONBigInt `json:"ip_decimal"`
+	Country    string      `json:"country,omitempty"`
+	CountryISO string      `json:"country_iso,omitempty"`
+	CountryEU  bool        `json:"country_eu"`
+	RegionName string      `json:"region_name,omitempty"`
+	RegionCode string      `json:"region_code,omitempty"`
+	MetroCode  uint64      `json:"metro_code,omitempty"`
+	ZipCode    string      `json:"zip_code,omitempty"`
+	City       string      `json:"city,omitempty"`
+	Latitude   float64     `json:"lat,omitempty"`
+	Longitude  float64     `json:"long,omitempty"`
+	TimeZone   string      `json:"time_zone,omitempty"`
+	ASN        string      `json:"asn,omitempty"`
+	ASNOrg     string      `json:"asn_org,omitempty"`
+	UserAgent  *userAgent  `json:"user_agent,omitempty"`
 }
 
 type LogWriter struct {
@@ -98,3 +133,9 @@ const (
 	BadAttempt   = 1
 	Unauthorized = 2
 )
+
+var EUCountries = []string{
+	"AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR",
+	"DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL",
+	"PL", "PT", "RO", "SK", "SI", "ES", "SE",
+}

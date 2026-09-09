@@ -33,6 +33,8 @@ func basicHandler(w http.ResponseWriter, r *http.Request, databases *i.DatabaseS
 		mode = i.IPOnly
 	case "full":
 		mode = i.Full
+	case "echoip":
+		mode = i.EchoIP
 	case "", "default":
 		mode = i.Default
 	default:
@@ -48,7 +50,7 @@ func basicHandler(w http.ResponseWriter, r *http.Request, databases *i.DatabaseS
 		return
 	}
 
-	data := databases.GetGeoData(queryIP, mode)
+	data := databases.GetGeoData(queryIP, mode, r.UserAgent())
 	if mode != i.IPOnly {
 		w.Header().Set("Content-Type", "application/json")
 	} else {

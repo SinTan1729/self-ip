@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/big"
 	"net"
 	"net/http"
 	"net/netip"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -74,14 +76,14 @@ func GetClientIP(r *http.Request) string {
 	return ip
 }
 
-func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, mode Mode) []byte {
+func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, mode Mode, uAgent string) []byte {
 	ip, err := netip.ParseAddr(rawIP)
 	if err != nil {
 		log.Fatal()
 	}
 
 	var (
-		record  cityResponse
+		record  fullResponse
 		asn     asnResponse
 		cityErr error
 		asnErr  error
@@ -104,52 +106,107 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 	}
 	record.IP = rawIP
 	record.ASN = asn
-
-	if mode == IPOnly {
-		return []byte(rawIP)
+	uAgentParts := strings.SplitN(uAgent, " ", 2)
+	var uAgentComment string
+	if len(uAgentParts) > 1 {
+		uAgentComment = uAgentParts[1]
 	}
-	if mode == Default {
-		var short shortRecord
-		short.IP = rawIP
-		short.City = record.City.Names.EN
+	uAgentMainParts := strings.SplitN(uAgentParts[0], "/", 2)
+	var uAgentVersion string
+	if len(uAgentMainParts) > 1 {
+		uAgentVersion = uAgentMainParts[1]
+	}
+	record.UserAgent = userAgent{
+		Product:  uAgentMainParts[0],
+		Version:  uAgentVersion,
+		Comment:  uAgentComment,
+		RawValue: uAgent,
+	}
+
+	switch mode {
+	case IPOnly:
+		return []byte(rawIP)
+
+	case Default:
+		var res defaultResponse
+		res.IP = rawIP
+		res.City = record.City.Names.EN
 		if len(record.Subdivisions) > 0 {
-			short.Region = &regionInfo{
+			res.Region = &regionInfo{
 				Name:    record.Subdivisions[0].Names.EN,
 				ISOCode: record.Subdivisions[0].ISOCode,
 			}
 		}
 		if record.Country.Names.EN != "" {
-			short.Country = &regionInfo{
+			res.Country = &regionInfo{
 				Name:    record.Country.Names.EN,
 				ISOCode: record.Country.ISOCode,
 			}
 		}
 		if record.Location.AccuracyRadius != 0 {
-			short.Location = &locationInfo{
+			res.Location = &locationInfo{
 				Latitude:  record.Location.Latitude,
 				Longitude: record.Location.Longitude,
 				Postal:    record.Postal.Code,
 			}
 		}
-		short.TimeZone = record.Location.TimeZone
+		res.TimeZone = record.Location.TimeZone
 		if record.ASN.AutonomousSystemNumber > 0 {
-			short.Organization = fmt.Sprintf("A%d %s",
+			res.Organization = fmt.Sprintf("A%d %s",
 				record.ASN.AutonomousSystemNumber,
 				record.ASN.AutonomousSystemOrganization)
 		}
 
-		jsonData, err := json.Marshal(short)
+		jsonData, err := json.Marshal(res)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return jsonData
+
+	case EchoIP:
+		var res echoIPResponse
+		res.IP = rawIP
+		ip := net.ParseIP(rawIP)
+		if v4 := ip.To4(); v4 != nil {
+			res.IPDecimal = (*JSONBigInt)(new(big.Int).SetBytes(v4))
+		} else {
+			res.IPDecimal = (*JSONBigInt)(new(big.Int).SetBytes(ip.To16()))
+		}
+		fmt.Println(res.IPDecimal)
+		res.Country = record.Country.Names.EN
+		res.CountryISO = record.Country.ISOCode
+		res.CountryEU = slices.Contains(EUCountries, res.CountryISO)
+		if len(record.Subdivisions) > 0 {
+			res.RegionName = record.Subdivisions[0].Names.EN
+			res.RegionCode = record.Subdivisions[0].ISOCode
+		}
+		res.MetroCode = record.Location.MetroCode
+		res.City = record.City.Names.EN
+		if record.Location.AccuracyRadius != 0 {
+			res.Latitude = record.Location.Latitude
+			res.Longitude = record.Location.Longitude
+			res.TimeZone = record.Location.TimeZone
+			res.ZipCode = record.Postal.Code
+		}
+		if record.ASN.AutonomousSystemNumber > 0 {
+			res.ASN = fmt.Sprintf("A%d", record.ASN.AutonomousSystemNumber)
+			res.ASNOrg = record.ASN.AutonomousSystemOrganization
+		}
+		res.UserAgent = &record.UserAgent
+
+		jsonData, err := json.Marshal(res)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return jsonData
+
+	default: // mode = Full
+		jsonData, err := json.Marshal(record)
 		if err != nil {
 			log.Fatal(err)
 		}
 		return jsonData
 	}
-
-	jsonData, err := json.Marshal(record)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return jsonData
 }
 
 func CheckAuth(key string, provided string) bool {
@@ -190,6 +247,8 @@ func LogText(clientIP string, mode Mode, queryIP string, attemptType uint) strin
 		modeText = ", mode: Full"
 	case IPOnly:
 		modeText = ", mode: IPOnly"
+	case EchoIP:
+		modeText = ", mode: EchoIP"
 	}
 
 	if queryIP != clientIP {
