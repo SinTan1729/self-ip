@@ -125,7 +125,7 @@ curl \
   "http://localhost:3213/?ip=8.8.8.8&mode=full"
 ```
 
-Take a look at the [full schema here](./structs.go).
+Take a look at the [full schema here](./internal/structs.go).
 
 The response content type is `application/json`.
 
