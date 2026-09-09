@@ -43,11 +43,29 @@ func (d *DatabaseStore) Close() {
 	}
 }
 
+func isDatabaseUsable() bool {
+	f, err := os.ReadFile("./maxmind-databases/version")
+	dateStr := strings.ReplaceAll(strings.TrimSpace(string(f)), ".", "-")
+	if err == nil {
+		if date, err := time.Parse(time.DateOnly, dateStr); err != nil {
+			fmt.Println(date, dateStr)
+			return false
+		} else {
+			return time.Since(date) < 30*24*time.Hour
+		}
+	}
+	return false
+}
+
 func (d *DatabaseStore) Reload() error {
 	type result struct {
 		city *maxminddb.Reader
 		asn  *maxminddb.Reader
 		err  error
+	}
+
+	if !isDatabaseUsable() {
+		return fmt.Errorf("Databases are older than 30 days. Quitting.")
 	}
 
 	cityCh := make(chan result, 1)
@@ -102,7 +120,7 @@ func GetDatabases() {
 	curVer := semver.MustParse("0.0.0")
 	f, err := os.ReadFile("./maxmind-databases/version")
 	if err == nil {
-		curVer, err = semver.NewVersion(string(f))
+		curVer, err = semver.NewVersion(strings.TrimSpace(string(f)))
 		if err != nil {
 			curVer = semver.MustParse("0.0.0")
 		}
@@ -118,7 +136,10 @@ func GetDatabases() {
 	}
 
 	resp, err := http.Get("https://api.github.com/repos/P3TERX/GeoLite.mmdb/releases/latest")
-	Check(err)
+	if err != nil {
+		log.Println("Failed to get latest database version data.")
+		return
+	}
 	defer resp.Body.Close()
 	type Asset struct {
 		Name               string `json:"name"`
@@ -131,10 +152,14 @@ func GetDatabases() {
 	}
 	var release Release
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		panic(err)
+		log.Println("Failed to get latest database version data.")
+		return
 	}
 	newVer, err := semver.NewVersion(release.TagName)
-	Check(err)
+	if err != nil {
+		log.Println("Failed to get latest database version data.")
+		return
+	}
 
 	if newVer.GreaterThan(curVer) {
 		log.Println("New version of databases available:", newVer)
@@ -220,7 +245,10 @@ func GetDatabases() {
 	wg.Wait()
 	close(errCh)
 	for err := range errCh {
-		Check(err)
+		if err != nil {
+			log.Println("Failed to get latest database version data.")
+			return
+		}
 	}
 	err = os.WriteFile("./maxmind-databases/version.tmp", []byte(newVer.Original()), 0644)
 	Check(err)

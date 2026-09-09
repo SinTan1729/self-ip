@@ -72,6 +72,7 @@ func main() {
 	log.Println("-----------------")
 
 	i.GetDatabases()
+
 	databases := &i.DatabaseStore{}
 	if err := databases.Reload(); err != nil {
 		log.Fatal(err)
