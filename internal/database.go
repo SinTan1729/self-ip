@@ -43,7 +43,7 @@ func (d *DatabaseStore) Close() {
 	}
 }
 
-func isDatabaseUsable() bool {
+func areDatabasesUsable() bool {
 	f, err := os.ReadFile("./maxmind-databases/version")
 	dateStr := strings.ReplaceAll(strings.TrimSpace(string(f)), ".", "-")
 	if err == nil {
@@ -64,7 +64,7 @@ func (d *DatabaseStore) Reload() error {
 		err  error
 	}
 
-	if !isDatabaseUsable() {
+	if !areDatabasesUsable() {
 		return fmt.Errorf("Databases are older than 30 days. Quitting.")
 	}
 
