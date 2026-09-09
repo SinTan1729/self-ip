@@ -32,6 +32,11 @@ Example `docker compose` and `podman quadlet` files are provided in the
 
 **Remember to change the API Key hash before deploying.** The provided hash is gibberish.
 
+## Building Locally
+
+Clone the repo, and use `make run` to build and run the binary. Make sure you create
+a `.env` file with `SELF_IP_API_KEY` variable containing a valid `Argon2id` hash.
+
 ## API
 
 All requests require the `X-API-Key` header. The API Key has to be
