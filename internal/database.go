@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"bytes"
@@ -20,19 +20,30 @@ import (
 	"github.com/oschwald/maxminddb-golang/v2"
 )
 
-type databaseStore struct {
+type DatabaseStore struct {
 	mu     sync.RWMutex
 	dbCity *maxminddb.Reader
 	dbASN  *maxminddb.Reader
 }
 
-func (d *databaseStore) getGeoData(rawIP string, mode Mode) []byte {
+func (d *DatabaseStore) GetGeoData(rawIP string, mode Mode) []byte {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	return getGeoData(rawIP, d.dbCity, d.dbASN, mode)
 }
 
-func (d *databaseStore) reload() error {
+func (d *DatabaseStore) Close() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.dbCity != nil {
+		_ = d.dbCity.Close()
+	}
+	if d.dbASN != nil {
+		_ = d.dbASN.Close()
+	}
+}
+
+func (d *DatabaseStore) Reload() error {
 	type result struct {
 		city *maxminddb.Reader
 		asn  *maxminddb.Reader
@@ -83,10 +94,10 @@ func (d *databaseStore) reload() error {
 	return nil
 }
 
-func getDatabases() {
+func GetDatabases() {
 	log.Println("Checking for database updates.")
 	err := os.MkdirAll("./maxmind-databases", 0755)
-	check(err)
+	Check(err)
 
 	curVer := semver.MustParse("0.0.0")
 	f, err := os.ReadFile("./maxmind-databases/version")
@@ -107,7 +118,7 @@ func getDatabases() {
 	}
 
 	resp, err := http.Get("https://api.github.com/repos/P3TERX/GeoLite.mmdb/releases/latest")
-	check(err)
+	Check(err)
 	defer resp.Body.Close()
 	type Asset struct {
 		Name               string `json:"name"`
@@ -123,7 +134,7 @@ func getDatabases() {
 		panic(err)
 	}
 	newVer, err := semver.NewVersion(release.TagName)
-	check(err)
+	Check(err)
 
 	if newVer.GreaterThan(curVer) {
 		log.Println("New version of databases available:", newVer)
@@ -209,20 +220,20 @@ func getDatabases() {
 	wg.Wait()
 	close(errCh)
 	for err := range errCh {
-		check(err)
+		Check(err)
 	}
 	err = os.WriteFile("./maxmind-databases/version.tmp", []byte(newVer.Original()), 0644)
-	check(err)
+	Check(err)
 	files := []string{"GeoLite2-City.mmdb", "GeoLite2-ASN.mmdb", "version"}
 	for _, file := range files {
 		err = os.Rename(fmt.Sprintf("./maxmind-databases/%s.tmp", file), fmt.Sprintf("./maxmind-databases/%s", file))
-		check(err)
+		Check(err)
 	}
 
 	log.Println("Databases updated to version:", newVer)
 }
 
-func scheduleDatabaseUpdates(databases *databaseStore) {
+func (d *DatabaseStore) ScheduleUpdates() {
 	for {
 		now := time.Now().Add(time.Hour)
 		next := time.Date(now.Year(), now.Month(), now.Day(), 7, rand.IntN(10)-5, rand.IntN(60)-30, 0, time.UTC)
@@ -234,8 +245,8 @@ func scheduleDatabaseUpdates(databases *databaseStore) {
 		time.Sleep(time.Until(next))
 
 		log.Println("Running scheduled database update")
-		getDatabases()
-		if err := databases.reload(); err != nil {
+		GetDatabases()
+		if err := d.Reload(); err != nil {
 			log.Printf("Database reload failed: %v", err)
 			continue
 		}

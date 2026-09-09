@@ -1,105 +1,24 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"net/netip"
 	"net/url"
 	"os"
-	"sync"
 
-	"github.com/oschwald/maxminddb-golang/v2"
+	i "github.com/SinTan1729/self-ip/internal"
 )
 
 var Version = "unknown"
 
-func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, mode Mode) []byte {
-	ip, err := netip.ParseAddr(rawIP)
-	if err != nil {
-		log.Fatal()
-	}
-
-	var (
-		record  CityResponse
-		asn     ASNResponse
-		cityErr error
-		asnErr  error
-		wg      sync.WaitGroup
-	)
-
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		cityErr = dbCity.Lookup(ip).Decode(&record)
-	}()
-	go func() {
-		defer wg.Done()
-		asnErr = dbASN.Lookup(ip).Decode(&asn)
-	}()
-
-	wg.Wait()
-	if cityErr != nil || asnErr != nil {
-		return nil
-	}
-	record.IP = rawIP
-	record.ASN = asn
-
-	if mode == IPOnly {
-		return []byte(rawIP)
-	}
-	if mode == Default {
-		var short shortRecord
-		short.IP = rawIP
-		short.City = record.City.Names.EN
-		if len(record.Subdivisions) > 0 {
-			short.Region = &RegionInfo{
-				Name:    record.Subdivisions[0].Names.EN,
-				ISOCode: record.Subdivisions[0].ISOCode,
-			}
-		}
-		if record.Country.Names.EN != "" {
-			short.Country = &RegionInfo{
-				Name:    record.Country.Names.EN,
-				ISOCode: record.Country.ISOCode,
-			}
-		}
-		if record.Location.AccuracyRadius != 0 {
-			short.Location = &LocationInfo{
-				Latitude:  record.Location.Latitude,
-				Longitude: record.Location.Longitude,
-				Postal:    record.Postal.Code,
-			}
-		}
-		short.TimeZone = record.Location.TimeZone
-		if record.ASN.AutonomousSystemNumber > 0 {
-			short.Organization = fmt.Sprintf("A%d %s",
-				record.ASN.AutonomousSystemNumber,
-				record.ASN.AutonomousSystemOrganization)
-		}
-
-		jsonData, err := json.Marshal(short)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return jsonData
-	}
-
-	jsonData, err := json.Marshal(record)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return jsonData
-}
-
-func basicHandler(w http.ResponseWriter, r *http.Request, databases *databaseStore, apiKey string) {
+func basicHandler(w http.ResponseWriter, r *http.Request, databases *i.DatabaseStore, apiKey string) {
 	url, err := url.Parse(r.RequestURI)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	clientIP := getClientIP(r)
+	clientIP := i.GetClientIP(r)
 	customIP := url.Query().Get("ip")
 	var queryIP string
 	if customIP != "" {
@@ -108,72 +27,63 @@ func basicHandler(w http.ResponseWriter, r *http.Request, databases *databaseSto
 		queryIP = clientIP
 	}
 
-	var mode Mode
+	var mode i.Mode
 	switch url.Query().Get("mode") {
 	case "ip_only":
-		mode = IPOnly
+		mode = i.IPOnly
 	case "full":
-		mode = Full
+		mode = i.Full
 	case "", "default":
-		mode = Default
+		mode = i.Default
 	default:
-		log.Println(logText(clientIP, mode, queryIP, BadAttempt))
+		log.Println(i.LogText(clientIP, mode, queryIP, i.BadAttempt))
 		http.Error(w, "400 Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	if !checkAuth(apiKey, r.Header.Get("X-API-Key")) {
-		log.Println(logText(clientIP, mode, queryIP, Unauthorized))
+	if !i.CheckAuth(apiKey, r.Header.Get("X-API-Key")) {
+		log.Println(i.LogText(clientIP, mode, queryIP, i.Unauthorized))
 		w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
 		http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	data := databases.getGeoData(queryIP, mode)
-	if mode != IPOnly {
+	data := databases.GetGeoData(queryIP, mode)
+	if mode != i.IPOnly {
 		w.Header().Set("Content-Type", "application/json")
 	} else {
 		w.Header().Set("Content-Type", "text/plain")
 	}
 
-	log.Println(logText(clientIP, mode, queryIP, GoodAttempt))
+	log.Println(i.LogText(clientIP, mode, queryIP, i.GoodAttempt))
 	fmt.Fprintf(w, "%s", data)
 }
 
 func main() {
 	log.SetFlags(0)
-	log.SetOutput(new(logWriter))
+	log.SetOutput(new(i.LogWriter))
 
 	if Version == "unknown" {
-		log.Println(Blue + "Self IP (dev build)" + Reset)
+		log.Println(i.Blue + "Self IP (dev build)" + i.Reset)
 	} else {
-		log.Printf(Blue+"Self IP v%s"+Reset, Version)
+		log.Printf(i.Blue+"Self IP v%s"+i.Reset, Version)
 	}
-	log.Println(Blue + "https://github.com/SinTan1729/self-ip" + Reset)
+	log.Println(i.Blue + "https://github.com/SinTan1729/self-ip" + i.Reset)
 	log.Println("-----------------")
 
-	getDatabases()
-	databases := &databaseStore{}
-	if err := databases.reload(); err != nil {
+	i.GetDatabases()
+	databases := &i.DatabaseStore{}
+	if err := databases.Reload(); err != nil {
 		log.Fatal(err)
 	}
-	defer func() {
-		databases.mu.Lock()
-		defer databases.mu.Unlock()
-		if databases.dbCity != nil {
-			_ = databases.dbCity.Close()
-		}
-		if databases.dbASN != nil {
-			_ = databases.dbASN.Close()
-		}
-	}()
+	defer databases.Close()
 
 	apiKey, flag := os.LookupEnv("SELF_IP_API_KEY")
 	if !flag {
 		log.Fatal("No API key was provided.")
 	}
 
-	go scheduleDatabaseUpdates(databases)
+	go databases.ScheduleUpdates()
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {

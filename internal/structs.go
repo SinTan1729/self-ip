@@ -1,4 +1,4 @@
-package main
+package internal
 
 type Mode uint
 
@@ -82,7 +82,7 @@ type shortRecord struct {
 	Organization string        `json:"org,omitempty"`
 }
 
-type logWriter struct {
+type LogWriter struct {
 }
 
 const (
