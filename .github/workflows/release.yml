@@ -12,6 +12,7 @@ on:
       - "go.sum"
       - ".github/workflows/**"
       - "deploy/Containerfile"
+  workflow_dispatch:
 
 permissions:
   contents: read
