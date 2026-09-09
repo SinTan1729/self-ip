@@ -79,7 +79,10 @@ func checkAuth(key string, provided string) bool {
 }
 
 func (writer logWriter) Write(bytes []byte) (int, error) {
-	return fmt.Print(Grey + "[" + time.Now().Local().Format("2006-01-02T15:04:05.000Z") + "]" + Reset + " " + string(bytes))
+	timestamp := time.Now().Format("2006-01-02T15:04:05.000Z07:00")
+	return fmt.Print(
+		Grey + "[" + timestamp + "]" + Reset + " " + string(bytes),
+	)
 }
 
 func logText(clientIP string, mode Mode, queryIP string, attemptType uint) string {
