@@ -8,7 +8,7 @@ const (
 	Full    Mode = 2
 )
 
-type Names struct {
+type names struct {
 	DE   string `maxminddb:"de" json:"de,omitempty"`
 	EN   string `maxminddb:"en" json:"en,omitempty"`
 	ES   string `maxminddb:"es" json:"es,omitempty"`
@@ -18,56 +18,56 @@ type Names struct {
 	RU   string `maxminddb:"ru" json:"ru,omitempty"`
 	ZHCN string `maxminddb:"zh-CN" json:"zh-CN,omitempty"`
 }
-type City struct {
+type city struct {
 	GeoNameID uint64 `maxminddb:"geoname_id" json:"geoname_id,omitempty"`
-	Names     Names  `maxminddb:"names" json:"names,omitempty"`
+	Names     names  `maxminddb:"names" json:"names,omitempty"`
 }
-type Continent struct {
+type continent struct {
 	Code      string `maxminddb:"code" json:"code,omitempty"`
 	GeoNameID uint64 `maxminddb:"geoname_id" json:"geoname_id,omitempty"`
-	Names     Names  `maxminddb:"names" json:"names,omitempty"`
+	Names     names  `maxminddb:"names" json:"names,omitempty"`
 }
-type Country struct {
+type country struct {
 	GeoNameID uint64 `maxminddb:"geoname_id" json:"geoname_id,omitempty"`
 	ISOCode   string `maxminddb:"iso_code" json:"iso_code,omitempty"`
-	Names     Names  `maxminddb:"names" json:"names,omitempty"`
+	Names     names  `maxminddb:"names" json:"names,omitempty"`
 }
-type Location struct {
+type location struct {
 	AccuracyRadius uint64  `maxminddb:"accuracy_radius" json:"accuracy_radius,omitempty"`
 	Latitude       float64 `maxminddb:"latitude" json:"latitude,omitempty"`
 	Longitude      float64 `maxminddb:"longitude" json:"longitude,omitempty"`
 	MetroCode      uint64  `maxminddb:"metro_code" json:"metro_code,omitempty"`
 	TimeZone       string  `maxminddb:"time_zone" json:"time_zone,omitempty"`
 }
-type Postal struct {
+type postal struct {
 	Code string `maxminddb:"code" json:"code,omitempty"`
 }
-type Subdivision struct {
+type subdivision struct {
 	GeoNameID uint64 `maxminddb:"geoname_id" json:"geoname_id,omitempty"`
 	ISOCode   string `maxminddb:"iso_code" json:"iso_code,omitempty"`
-	Names     Names  `maxminddb:"names" json:"names,omitempty"`
+	Names     names  `maxminddb:"names" json:"names,omitempty"`
 }
-type ASNResponse struct {
+type asnResponse struct {
 	AutonomousSystemNumber       uint64 `maxminddb:"autonomous_system_number" json:"number,omitempty"`
 	AutonomousSystemOrganization string `maxminddb:"autonomous_system_organization" json:"organization,omitempty"`
 }
-type CityResponse struct {
+type cityResponse struct {
 	IP                string        `json:"ip"`
-	City              City          `maxminddb:"city" json:"city,omitempty"`
-	Continent         Continent     `maxminddb:"continent" json:"continent,omitempty"`
-	Country           Country       `maxminddb:"country" json:"country,omitempty"`
-	Location          Location      `maxminddb:"location" json:"location,omitempty"`
-	Postal            Postal        `maxminddb:"postal" json:"postal,omitempty"`
-	RegisteredCountry Country       `maxminddb:"registered_country" json:"registered_country,omitempty"`
-	Subdivisions      []Subdivision `maxminddb:"subdivisions" json:"subdivisions,omitempty"`
-	ASN               ASNResponse   `json:"asn,omitempty"`
+	City              city          `maxminddb:"city" json:"city,omitempty"`
+	Continent         continent     `maxminddb:"continent" json:"continent,omitempty"`
+	Country           country       `maxminddb:"country" json:"country,omitempty"`
+	Location          location      `maxminddb:"location" json:"location,omitempty"`
+	Postal            postal        `maxminddb:"postal" json:"postal,omitempty"`
+	RegisteredCountry country       `maxminddb:"registered_country" json:"registered_country,omitempty"`
+	Subdivisions      []subdivision `maxminddb:"subdivisions" json:"subdivisions,omitempty"`
+	ASN               asnResponse   `json:"asn,omitempty"`
 }
 
-type RegionInfo struct {
+type regionInfo struct {
 	Name    string `json:"name,omitempty"`
 	ISOCode string `json:"iso,omitempty"`
 }
-type LocationInfo struct {
+type locationInfo struct {
 	Latitude  float64 `json:"lat,omitempty"`
 	Longitude float64 `json:"long,omitempty"`
 	Postal    string  `json:"postal,omitempty"`
@@ -75,9 +75,9 @@ type LocationInfo struct {
 type shortRecord struct {
 	IP           string        `json:"ip"`
 	City         string        `json:"city,omitempty"`
-	Region       *RegionInfo   `json:"region,omitempty"`
-	Country      *RegionInfo   `json:"country,omitempty"`
-	Location     *LocationInfo `json:"location,omitempty"`
+	Region       *regionInfo   `json:"region,omitempty"`
+	Country      *regionInfo   `json:"country,omitempty"`
+	Location     *locationInfo `json:"location,omitempty"`
 	TimeZone     string        `json:"tz,omitempty"`
 	Organization string        `json:"org,omitempty"`
 }

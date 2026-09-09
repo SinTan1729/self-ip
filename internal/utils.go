@@ -81,8 +81,8 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 	}
 
 	var (
-		record  CityResponse
-		asn     ASNResponse
+		record  cityResponse
+		asn     asnResponse
 		cityErr error
 		asnErr  error
 		wg      sync.WaitGroup
@@ -113,19 +113,19 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 		short.IP = rawIP
 		short.City = record.City.Names.EN
 		if len(record.Subdivisions) > 0 {
-			short.Region = &RegionInfo{
+			short.Region = &regionInfo{
 				Name:    record.Subdivisions[0].Names.EN,
 				ISOCode: record.Subdivisions[0].ISOCode,
 			}
 		}
 		if record.Country.Names.EN != "" {
-			short.Country = &RegionInfo{
+			short.Country = &regionInfo{
 				Name:    record.Country.Names.EN,
 				ISOCode: record.Country.ISOCode,
 			}
 		}
 		if record.Location.AccuracyRadius != 0 {
-			short.Location = &LocationInfo{
+			short.Location = &locationInfo{
 				Latitude:  record.Location.Latitude,
 				Longitude: record.Location.Longitude,
 				Postal:    record.Postal.Code,
