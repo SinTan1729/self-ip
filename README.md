@@ -2,9 +2,12 @@
 
 A small self-hosted IP geolocation API written in Go.
 
-The server determines the client's IP address or accepts an IP address through a query parameter, then returns geolocation and ASN information using the [MaxMind GeoLite2](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) databases.
+The server determines the client's IP address or accepts an IP address through
+a query parameter, then returns geolocation and ASN information using the
+[MaxMind GeoLite2](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) databases.
 
-It is highly recommended that you use it behind a reverse proxy e.g. [Caddy](https://caddyserver.com).
+It is highly recommended that you use it behind a reverse proxy e.g.
+[Caddy](https://caddyserver.com).
 
 ## Features
 
@@ -17,17 +20,23 @@ It is highly recommended that you use it behind a reverse proxy e.g. [Caddy](htt
 
 ## Database Updates
 
-On startup, the server checks the latest release of the [P3TERX/GeoLite.mmdb](https://github.com/P3TERX/GeoLite.mmdb) repository.
+On startup, the server checks the latest release of the
+[P3TERX/GeoLite.mmdb](https://github.com/P3TERX/GeoLite.mmdb) repository.
 Then, they're checked once a day around 7am.
 
-## Installation
+## Deployment
 
-The recommended method of installation is using containers e.g. Docker or Podman. Example `docker compose` and `podman quadlet` files
-are provided in the [`deploy`](./deploy) directory.
+The recommended method of installation is using containers e.g. Docker or Podman.
+Example `docker compose` and `podman quadlet` files are provided in the
+[`deploy`](./deploy) directory.
+
+**Remember to change the API Key hash before deploying.** The provided hash is gibberish.
 
 ## API
 
-All requests require the `X-API-Key` header. The API Key has to be [`Argon2id`](https://www.argon2.com) encrypted. Check the deployment files for some notes. The following can be used to generate an API key.
+All requests require the `X-API-Key` header. The API Key has to be
+[`Argon2id`](https://www.argon2.com) encrypted. Check the deployment
+files for some notes. The following can be used to generate an API key.
 
 ```bash
 openssl rand -hex 32
