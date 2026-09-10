@@ -19,6 +19,7 @@ type AppData struct {
 	ApiKey    string
 	Databases *DatabaseStore
 	Proxies   []netip.Prefix
+	OwnIP     []netip.Addr
 }
 
 type names struct {

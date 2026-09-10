@@ -317,3 +317,63 @@ func ParseTrustedProxies(value string) ([]netip.Prefix, error) {
 	}
 	return prefixes, nil
 }
+
+func GetOwnIPs() []netip.Addr {
+	type networkKey struct{}
+	url := "https://ifconfig.co/ip"
+	var addrs []netip.Addr
+
+	client := &http.Client{
+		Timeout: 2 * time.Second,
+		Transport: &http.Transport{
+			DisableKeepAlives: true,
+			DialContext: func(ctx context.Context, _, addr string) (net.Conn, error) {
+				network, _ := ctx.Value(networkKey{}).(string)
+				if network == "" {
+					network = "tcp"
+				}
+				return (&net.Dialer{}).DialContext(ctx, network, addr)
+			},
+		},
+	}
+
+	get := func(network string) (string, error) {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		ctx = context.WithValue(ctx, networkKey{}, network)
+
+		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		var ip string
+		var returnErr error
+		if resp, err := client.Do(req); err == nil {
+			if b, err := io.ReadAll(resp.Body); err == nil {
+				ip = string(b)
+				defer resp.Body.Close()
+			} else {
+				returnErr = err
+				defer resp.Body.Close()
+			}
+		}
+		return strings.TrimSuffix(ip, "\n"), returnErr
+	}
+
+	if ipv4, err := get("tcp4"); err == nil {
+		addrs = append(addrs, netip.MustParseAddr(ipv4))
+	}
+	if ipv6, err := get("tcp6"); err == nil {
+		addrs = append(addrs, netip.MustParseAddr(ipv6))
+	}
+
+	return addrs
+}
+
+func PrettyPrintArray[T any](v []T) string {
+	var b strings.Builder
+	for i, x := range v {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		fmt.Fprint(&b, x)
+	}
+	return b.String()
+}

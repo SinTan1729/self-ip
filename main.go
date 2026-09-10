@@ -10,6 +10,7 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"slices"
 	"strconv"
 	"syscall"
 	"time"
@@ -72,20 +73,20 @@ func portHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	}
 	clientIP, queryIP := i.GetClientIP(url, r, appData.Proxies)
 
-	badRequest := false
+	var badRequest string
 	port := 443 // Default to https port
 	providedPort := r.URL.Query().Get("port")
 	if p, err := strconv.Atoi(providedPort); err == nil && p > 0 && p < 65536 {
 		port = p
 	} else if providedPort != "" {
-		badRequest = true
+		badRequest = "Bad port"
 	}
 
 	ip := netip.MustParseAddr(queryIP).Unmap()
-	if !ip.IsGlobalUnicast() || ip.IsLoopback() || ip.IsPrivate() ||
+	if !ip.IsGlobalUnicast() || slices.Contains(appData.OwnIP, ip) || ip.IsLoopback() || ip.IsPrivate() ||
 		ip.IsLinkLocalUnicast() || ip.IsMulticast() || ip.IsUnspecified() {
 		log.Println("Blocked IP was requested:", ip)
-		badRequest = true
+		badRequest = "Blocked IP"
 	}
 
 	address := fmt.Sprintf("[%s]:%d", queryIP, port)
@@ -100,9 +101,9 @@ func portHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 		http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	if badRequest {
+	if badRequest != "" {
 		log.Println(i.LogText(clientIP, mode, queryIP, i.BadAttempt))
-		http.Error(w, "400 Bad Request", http.StatusBadRequest)
+		http.Error(w, "400 Bad Request\n"+badRequest, http.StatusBadRequest)
 		return
 	}
 
@@ -173,13 +174,17 @@ func main() {
 		}
 	}
 	if trustedProxies != nil {
-		log.Println("Using trusted proxies:", trustedProxies)
+		log.Println("Using trusted proxies:", i.PrettyPrintArray(trustedProxies))
 	}
 
 	appData := i.AppData{
 		Databases: databases,
 		ApiKey:    apiKey,
 		Proxies:   trustedProxies,
+	}
+	if ownIPs := i.GetOwnIPs(); ownIPs != nil {
+		log.Println("Resolved own IPs:", i.PrettyPrintArray(ownIPs))
+		appData.OwnIP = ownIPs
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
