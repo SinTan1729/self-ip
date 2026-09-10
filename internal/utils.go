@@ -57,21 +57,33 @@ func downloadFile(ctx context.Context, url, filename string) error {
 	return err
 }
 
-func GetClientIP(url *url.URL, r *http.Request) (string, string) {
+func isTrustedProxy(rawIP string, prefixes []netip.Prefix) bool {
+	ip := netip.MustParseAddr(rawIP).Unmap()
+	for _, prefix := range prefixes {
+		if prefix.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+func GetClientIP(url *url.URL, r *http.Request, trustedProxies []netip.Prefix) (string, string) {
 	customIP := url.Query().Get("ip")
 	var queryIP string
 	var clientIP string
-
-	forwarded := r.Header.Get("X-Forwarded-For")
-	if forwarded != "" {
-		ips := strings.Split(forwarded, ",")
-		clientIP = strings.TrimSpace(ips[0])
-	} else if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
-		clientIP = realIP
-	} else if ip, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+	if ip, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
 		clientIP = ip
 	}
 
+	if isTrustedProxy(clientIP, trustedProxies) {
+		forwarded := r.Header.Get("X-Forwarded-For")
+		if forwarded != "" {
+			ips := strings.Split(forwarded, ",")
+			clientIP = strings.TrimSpace(ips[0])
+		} else if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
+			clientIP = realIP
+		}
+	}
 	if customIP != "" {
 		queryIP = customIP
 	} else {
@@ -275,4 +287,22 @@ func LogText(clientIP string, mode Mode, queryIP string, attemptType uint) strin
 	}
 
 	return fmt.Sprintf("%s%s from %s%s%s%s", color, prefix, clientIP, modeText, queryText, Reset)
+}
+
+func ParseTrustedProxies(value string) ([]netip.Prefix, error) {
+	var prefixes []netip.Prefix
+	for _, s := range strings.Split(value, ",") {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			continue
+		}
+
+		prefix, err := netip.ParsePrefix(s)
+		if err != nil {
+			return nil, fmt.Errorf("invalid trusted proxy subnet %q: %w", s, err)
+		}
+
+		prefixes = append(prefixes, prefix)
+	}
+	return prefixes, nil
 }

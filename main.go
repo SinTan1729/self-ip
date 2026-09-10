@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"os"
 	"strconv"
@@ -18,12 +19,12 @@ import (
 
 var Version = "unknown"
 
-func basicHandler(w http.ResponseWriter, r *http.Request, databases *i.DatabaseStore, apiKey string) {
+func basicHandler(w http.ResponseWriter, r *http.Request, databases *i.DatabaseStore, apiKey string, trustedProxies []netip.Prefix) {
 	url, err := url.Parse(r.RequestURI)
 	if err != nil {
 		log.Fatal(err)
 	}
-	clientIP, queryIP := i.GetClientIP(url, r)
+	clientIP, queryIP := i.GetClientIP(url, r, trustedProxies)
 
 	var mode i.Mode
 	switch url.Query().Get("mode") {
@@ -63,13 +64,13 @@ func basicHandler(w http.ResponseWriter, r *http.Request, databases *i.DatabaseS
 	fmt.Fprintf(w, "%s", data)
 }
 
-func portHandler(w http.ResponseWriter, r *http.Request, apiKey string) {
+func portHandler(w http.ResponseWriter, r *http.Request, apiKey string, trustedProxies []netip.Prefix) {
 	mode := i.PortCheck
 	url, err := url.Parse(r.RequestURI)
 	if err != nil {
 		log.Fatal(err)
 	}
-	clientIP, queryIP := i.GetClientIP(url, r)
+	clientIP, queryIP := i.GetClientIP(url, r, trustedProxies)
 
 	badRequest := false
 	port := 443 // Default to https port
@@ -79,6 +80,13 @@ func portHandler(w http.ResponseWriter, r *http.Request, apiKey string) {
 	} else if providedPort != "" {
 		badRequest = true
 	}
+
+	ip := netip.MustParseAddr(queryIP).Unmap()
+	if !ip.IsGlobalUnicast() || ip.IsLoopback() || ip.IsPrivate() ||
+		ip.IsLinkLocalUnicast() || ip.IsMulticast() || ip.IsUnspecified() {
+		badRequest = true
+	}
+
 	address := fmt.Sprintf("[%s]:%d", queryIP, port)
 	logAddress := address
 	if queryIP == clientIP {
@@ -154,16 +162,23 @@ func main() {
 		log.Fatal("No API key was provided.")
 	}
 
+	var trustedProxies []netip.Prefix
 	go databases.ScheduleUpdates()
+	if trustedProxiesEnv, flag := os.LookupEnv("SELF_IP_API_KEY"); !flag {
+		if p, err := i.ParseTrustedProxies(trustedProxiesEnv); err != nil {
+			trustedProxies = p
+			log.Fatal("Error processing trusted proxies:", err)
+		}
+	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/", "/json", "/api":
-			basicHandler(w, r, databases, apiKey)
+			basicHandler(w, r, databases, apiKey, trustedProxies)
 		case "/portcheck":
-			portHandler(w, r, apiKey)
+			portHandler(w, r, apiKey, trustedProxies)
 		default:
-			http.NotFound(w, r)
+			http.Error(w, "404 Page Not Found", http.StatusNotFound)
 		}
 	})
 
