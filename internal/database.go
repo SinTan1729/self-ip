@@ -26,6 +26,16 @@ type DatabaseStore struct {
 	dbASN  *maxminddb.Reader
 }
 
+func (d *DatabaseStore) Healthy() bool {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	if d.dbASN.Metadata.DatabaseType != "GeoLite2-ASN" ||
+		d.dbCity.Metadata.DatabaseType != "GeoLite2-City" {
+		return false
+	}
+	return true
+}
+
 func (d *DatabaseStore) GetGeoData(rawIP string, mode Mode, userAgent string) []byte {
 	d.mu.RLock()
 	defer d.mu.RUnlock()

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"os/signal"
 	"slices"
 	"strconv"
 	"syscall"
@@ -139,6 +141,15 @@ func portHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	fmt.Fprintf(w, string(jsonData))
 }
 
+func healthHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
+	if appData.Databases.Healthy() {
+		fmt.Fprintf(w, "healthy")
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "unhealthy")
+	}
+}
+
 func main() {
 	log.SetFlags(0)
 	log.SetOutput(new(i.LogWriter))
@@ -187,7 +198,8 @@ func main() {
 		appData.OwnIP = ownIPs
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	publicMux := http.NewServeMux()
+	publicMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/", "/json", "/api":
 			basicHandler(w, r, &appData)
@@ -197,9 +209,43 @@ func main() {
 			http.Error(w, "404 Page Not Found", http.StatusNotFound)
 		}
 	})
+	public := &http.Server{
+		Addr:    ":3213",
+		Handler: publicMux,
+	}
+
+	healthMux := http.NewServeMux()
+	healthMux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		healthHandler(w, r, &appData)
+	})
+	health := &http.Server{
+		Addr:    "127.0.0.1:1729",
+		Handler: healthMux,
+	}
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		if err := health.ListenAndServe(); err != nil &&
+			!errors.Is(err, http.ErrServerClosed) {
+			log.Printf("health: %v", err)
+		}
+	}()
+
+	go func() {
+		if err := public.ListenAndServe(); err != nil &&
+			!errors.Is(err, http.ErrServerClosed) {
+			log.Printf("public: %v", err)
+		}
+	}()
 
 	log.Println("Server running at http://localhost:3213")
-	if err := http.ListenAndServe(":3213", nil); err != nil {
-		panic(err)
-	}
+	<-sig
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	public.Shutdown(ctx)
+	health.Shutdown(ctx)
 }
