@@ -107,7 +107,7 @@ type echoIPResponse struct {
 	IPDecimal  *JSONBigInt `json:"ip_decimal"`
 	Country    string      `json:"country,omitempty"`
 	CountryISO string      `json:"country_iso,omitempty"`
-	CountryEU  bool        `json:"country_eu"`
+	CountryEU  *bool       `json:"country_eu,omitempty"`
 	RegionName string      `json:"region_name,omitempty"`
 	RegionCode string      `json:"region_code,omitempty"`
 	MetroCode  uint64      `json:"metro_code,omitempty"`

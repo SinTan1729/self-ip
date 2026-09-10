@@ -183,7 +183,10 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 		res.IPDecimal = calcIPDecimal(rawIP)
 		res.Country = record.Country.Names.EN
 		res.CountryISO = record.Country.ISOCode
-		res.CountryEU = slices.Contains(EUCountries, res.CountryISO)
+		if res.CountryISO != "" {
+			eu := slices.Contains(EUCountries, res.CountryISO)
+			res.CountryEU = &eu
+		}
 		if len(record.Subdivisions) > 0 {
 			res.RegionName = record.Subdivisions[0].Names.EN
 			res.RegionCode = record.Subdivisions[0].ISOCode
