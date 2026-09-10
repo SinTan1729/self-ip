@@ -49,6 +49,10 @@ func basicHandler(w http.ResponseWriter, r *http.Request, databases *i.DatabaseS
 	}
 
 	data := databases.GetGeoData(queryIP, mode, r.UserAgent())
+	if data == nil {
+		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 	if mode != i.IPOnly {
 		w.Header().Set("Content-Type", "application/json")
 	} else {

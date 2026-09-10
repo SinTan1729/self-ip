@@ -93,7 +93,8 @@ func calcIPDecimal(rawIP string) *JSONBigInt {
 func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, mode Mode, uAgent string) []byte {
 	ip, err := netip.ParseAddr(rawIP)
 	if err != nil {
-		log.Fatal()
+		log.Panicln("Error getting IP:", err)
+		return nil
 	}
 
 	var (
