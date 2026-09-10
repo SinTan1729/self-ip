@@ -1,10 +1,12 @@
 # Self IP
 
-A small self-hosted IP geolocation API written in Go.
+A small self-hosted IP geolocation and port checking API written in Go.
 
 The server determines the client's IP address or accepts an IP address through
 a query parameter, then returns geolocation and ASN information using the
 [MaxMind GeoLite2](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) databases.
+
+It can also check for whether a port is open on a given IP address.
 
 It is highly recommended that you use it behind a reverse proxy e.g.
 [Caddy](https://caddyserver.com).
@@ -64,7 +66,17 @@ Use the `ip` query parameter:
 ```bash
 curl \
   -H "X-API-Key: your-secret-api-key" \
-  "http://localhost:3213/?ip=8.8.8.8"
+  "http://localhost:3213?ip=8.8.8.8"
+```
+
+## Allowed paths
+
+The paths `/`, `/json`, `/api` are used for IP geolocation check. They return the same data.
+The path `/portcheck` is used for `port` probing.
+Any other paths will return:
+
+```text
+404 Page Not Found
 ```
 
 ## Response Modes
@@ -100,7 +112,7 @@ Example:
 ```bash
 curl \
   -H "X-API-Key: your-secret-api-key" \
-  "http://localhost:3213/?ip=8.8.8.8"
+  "http://localhost:3213?ip=8.8.8.8"
 ```
 
 ### IP-only mode
@@ -110,10 +122,25 @@ Return only the queried IP address:
 ```bash
 curl \
   -H "X-API-Key: your-secret-api-key" \
-  "http://localhost:3213/?ip=8.8.8.8&mode=ip_only"
+  "http://localhost:3213?ip=8.8.8.8&mode=ip_only"
 ```
 
 The response content type is `text/plain` e.g. `1.2.3.4`.
+
+### `echoip` mode
+
+This mode mimics the output of [`echoip`](https://github.com/mpolden/echoip).
+
+```bash
+curl \
+  -H "X-API-Key: your-secret-api-key" \
+  "http://localhost:3213?ip=8.8.8.8&mode=echoip"
+```
+
+Check [ifconfig.co](https://ifconfig.co/json) for the reply schema.
+
+The response content type is `application/json`. It can be useful as a drop-in
+replacement for `ifconfig.co`.
 
 ### Full mode
 
@@ -129,12 +156,36 @@ Take a look at the [full schema here](./internal/structs.go).
 
 The response content type is `application/json`.
 
+## Port checker
+
+Check the status of a port:
+
+```bash
+curl \
+  -H "X-API-Key: your-secret-api-key" \
+  "http://localhost:3213/portcheck?ip=8.8.8.8&port=53"
+```
+
+If not provided, `port` defaults to `443`.
+
+Example response:
+
+```json
+{
+  "ip": "8.8.8.8",
+  "port": 53,
+  "reachable": true,
+  "status": "open"
+}
+```
+
 ## Query Parameters
 
-| Parameter | Description                                                                  |
-| --------- | ---------------------------------------------------------------------------- |
-| `ip`      | Optional IP address to look up. If omitted, the client's IP address is used. |
-| `mode`    | Response mode: default, `ip_only`, or `full`.                                |
+| Parameter | Description                                                                         |
+| --------- | ----------------------------------------------------------------------------------- |
+| `ip`      | Optional IP address to look up. If omitted, the client's IP address is used.        |
+| `mode`    | Response mode: default, `ip_only`, `echoip` or `full`.                              |
+| `port`    | Optional port to probe. If ommitted, defaults to `443`. Only works in `/portcheck`. |
 
 ## Authentication
 
@@ -148,13 +199,4 @@ Requests without a valid key receive:
 
 ```text
 401 Unauthorized
-```
-
-## Allowed paths
-
-Only the paths `/`, `/json`, `/api` are allowed. The paths don't change the returned value.
-Any other paths will return:
-
-```text
-404 Page Not Found
 ```
