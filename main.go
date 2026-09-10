@@ -103,7 +103,7 @@ func portHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	}
 	if badRequest != "" {
 		log.Println(i.LogText(clientIP, mode, queryIP, i.BadAttempt))
-		http.Error(w, "400 Bad Request\n"+badRequest, http.StatusBadRequest)
+		http.Error(w, "400 Bad Request: "+badRequest, http.StatusBadRequest)
 		return
 	}
 

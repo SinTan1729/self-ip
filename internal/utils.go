@@ -337,31 +337,27 @@ func GetOwnIPs() []netip.Addr {
 		},
 	}
 
-	get := func(network string) (string, error) {
+	get := func(network string) (netip.Addr, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		ctx = context.WithValue(ctx, networkKey{}, network)
 
 		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		var ip string
-		var returnErr error
 		if resp, err := client.Do(req); err == nil {
+			defer resp.Body.Close()
 			if b, err := io.ReadAll(resp.Body); err == nil {
 				ip = string(b)
-				defer resp.Body.Close()
-			} else {
-				returnErr = err
-				defer resp.Body.Close()
 			}
 		}
-		return strings.TrimSuffix(ip, "\n"), returnErr
+		return netip.ParseAddr(strings.TrimSuffix(ip, "\n"))
 	}
 
-	if ipv4, err := get("tcp4"); err == nil && ipv4 != "" {
-		addrs = append(addrs, netip.MustParseAddr(ipv4))
+	if ipv4, err := get("tcp4"); err == nil {
+		addrs = append(addrs, ipv4)
 	}
-	if ipv6, err := get("tcp6"); err == nil && ipv6 != "" {
-		addrs = append(addrs, netip.MustParseAddr(ipv6))
+	if ipv6, err := get("tcp6"); err == nil {
+		addrs = append(addrs, ipv6)
 	}
 
 	return addrs
