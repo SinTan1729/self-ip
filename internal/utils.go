@@ -357,10 +357,10 @@ func GetOwnIPs() []netip.Addr {
 		return strings.TrimSuffix(ip, "\n"), returnErr
 	}
 
-	if ipv4, err := get("tcp4"); err == nil {
+	if ipv4, err := get("tcp4"); err == nil && ipv4 != "" {
 		addrs = append(addrs, netip.MustParseAddr(ipv4))
 	}
-	if ipv6, err := get("tcp6"); err == nil {
+	if ipv6, err := get("tcp6"); err == nil && ipv6 != "" {
 		addrs = append(addrs, netip.MustParseAddr(ipv6))
 	}
 
