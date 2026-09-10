@@ -70,12 +70,12 @@ func portHandler(w http.ResponseWriter, r *http.Request, apiKey string) {
 	badRequest := false
 	port := 443 // Default to https port
 	providedPort := r.URL.Query().Get("port")
-	address := fmt.Sprintf("[%s]:%d", queryIP, port)
 	if p, err := strconv.Atoi(providedPort); err == nil && p > 0 && p < 65536 {
 		port = p
 	} else if providedPort != "" {
 		badRequest = true
 	}
+	address := fmt.Sprintf("[%s]:%d", queryIP, port)
 	if !i.CheckAuth(apiKey, r.Header.Get("X-API-Key")) {
 		log.Println(i.LogText(clientIP, mode, address, i.Unauthorized))
 		w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
