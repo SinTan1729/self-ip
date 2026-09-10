@@ -76,8 +76,13 @@ func portHandler(w http.ResponseWriter, r *http.Request, apiKey string) {
 		badRequest = true
 	}
 	address := fmt.Sprintf("[%s]:%d", queryIP, port)
+	logAddress := address
+	if queryIP == clientIP {
+		logAddress = fmt.Sprintf(":%d", port)
+	}
+
 	if !i.CheckAuth(apiKey, r.Header.Get("X-API-Key")) {
-		log.Println(i.LogText(clientIP, mode, address, i.Unauthorized))
+		log.Println(i.LogText(clientIP, mode, logAddress, i.Unauthorized))
 		w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
 		http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 		return
@@ -116,7 +121,7 @@ func portHandler(w http.ResponseWriter, r *http.Request, apiKey string) {
 		log.Fatal(err)
 	}
 
-	log.Println(i.LogText(clientIP, mode, address, i.GoodAttempt))
+	log.Println(i.LogText(clientIP, mode, logAddress, i.GoodAttempt))
 	fmt.Fprintf(w, string(jsonData))
 }
 
