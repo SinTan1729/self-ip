@@ -37,6 +37,13 @@ Example `docker compose` and `podman quadlet` files are provided in the
 
 **Remember to change the API Key hash before deploying.** The provided hash is gibberish.
 
+## Environment Variables
+
+| Variable name             | Description                                                                                                                                                                                                                 |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SELF_IP_API_KEY`         | Argon2 encrypted API Key. (Mandatory)                                                                                                                                                                                       |
+| `SELF_IP_TRUSTED_PROXIES` | List of trusted proxy IPs/subnet. If the request comes from one of these, the proxy headers will be used to figure out the client's real IP. Useful when the server if behind a reverse proxy, which is highly recommended. |
+
 ## Building Locally
 
 Clone the repo, and use `make run` to build and run the binary. Make sure you create
