@@ -165,7 +165,7 @@ func main() {
 
 	var trustedProxies []netip.Prefix
 	go databases.ScheduleUpdates()
-	if trustedProxiesEnv, flag := os.LookupEnv("TRUSTED_PROXIES"); flag {
+	if trustedProxiesEnv, flag := os.LookupEnv("SELF_IP_TRUSTED_PROXIES"); flag {
 		if p, err := i.ParseTrustedProxies(trustedProxiesEnv); err == nil {
 			trustedProxies = p
 		} else {
