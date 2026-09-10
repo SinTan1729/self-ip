@@ -113,8 +113,8 @@ type echoIPResponse struct {
 	MetroCode  uint64      `json:"metro_code,omitempty"`
 	ZipCode    string      `json:"zip_code,omitempty"`
 	City       string      `json:"city,omitempty"`
-	Latitude   float64     `json:"lat,omitempty"`
-	Longitude  float64     `json:"long,omitempty"`
+	Latitude   float64     `json:"latitude,omitempty"`
+	Longitude  float64     `json:"longitude,omitempty"`
 	TimeZone   string      `json:"time_zone,omitempty"`
 	ASN        string      `json:"asn,omitempty"`
 	ASNOrg     string      `json:"asn_org,omitempty"`
