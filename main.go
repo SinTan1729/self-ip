@@ -19,12 +19,12 @@ import (
 
 var Version = "unknown"
 
-func basicHandler(w http.ResponseWriter, r *http.Request, databases *i.DatabaseStore, apiKey string, trustedProxies []netip.Prefix) {
+func basicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	url, err := url.Parse(r.RequestURI)
 	if err != nil {
 		log.Fatal(err)
 	}
-	clientIP, queryIP := i.GetClientIP(url, r, trustedProxies)
+	clientIP, queryIP := i.GetClientIP(url, r, appData.Proxies)
 
 	var mode i.Mode
 	switch url.Query().Get("mode") {
@@ -42,14 +42,14 @@ func basicHandler(w http.ResponseWriter, r *http.Request, databases *i.DatabaseS
 		return
 	}
 
-	if !i.CheckAuth(apiKey, r.Header.Get("X-API-Key")) {
+	if !i.CheckAuth(appData.ApiKey, r.Header.Get("X-API-Key")) {
 		log.Println(i.LogText(clientIP, mode, queryIP, i.Unauthorized))
 		w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
 		http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	data := databases.GetGeoData(queryIP, mode, r.UserAgent())
+	data := appData.Databases.GetGeoData(queryIP, mode, r.UserAgent())
 	if data == nil {
 		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
 		return
@@ -64,13 +64,13 @@ func basicHandler(w http.ResponseWriter, r *http.Request, databases *i.DatabaseS
 	fmt.Fprintf(w, "%s", data)
 }
 
-func portHandler(w http.ResponseWriter, r *http.Request, apiKey string, trustedProxies []netip.Prefix) {
+func portHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	mode := i.PortCheck
 	url, err := url.Parse(r.RequestURI)
 	if err != nil {
 		log.Fatal(err)
 	}
-	clientIP, queryIP := i.GetClientIP(url, r, trustedProxies)
+	clientIP, queryIP := i.GetClientIP(url, r, appData.Proxies)
 
 	badRequest := false
 	port := 443 // Default to https port
@@ -94,7 +94,7 @@ func portHandler(w http.ResponseWriter, r *http.Request, apiKey string, trustedP
 		logAddress = fmt.Sprintf(":%d", port)
 	}
 
-	if !i.CheckAuth(apiKey, r.Header.Get("X-API-Key")) {
+	if !i.CheckAuth(appData.ApiKey, r.Header.Get("X-API-Key")) {
 		log.Println(i.LogText(clientIP, mode, logAddress, i.Unauthorized))
 		w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
 		http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
@@ -172,14 +172,22 @@ func main() {
 			log.Fatal("Error processing trusted proxies:", err)
 		}
 	}
-	log.Println("Using trusted proxies:", trustedProxies)
+	if trustedProxies != nil {
+		log.Println("Using trusted proxies:", trustedProxies)
+	}
+
+	appData := i.AppData{
+		Databases: databases,
+		ApiKey:    apiKey,
+		Proxies:   trustedProxies,
+	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/", "/json", "/api":
-			basicHandler(w, r, databases, apiKey, trustedProxies)
+			basicHandler(w, r, &appData)
 		case "/portcheck":
-			portHandler(w, r, apiKey, trustedProxies)
+			portHandler(w, r, &appData)
 		default:
 			http.Error(w, "404 Page Not Found", http.StatusNotFound)
 		}

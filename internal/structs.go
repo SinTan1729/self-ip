@@ -1,6 +1,9 @@
 package internal
 
-import "math/big"
+import (
+	"math/big"
+	"net/netip"
+)
 
 type Mode uint
 
@@ -11,6 +14,12 @@ const (
 	Full      Mode = 3
 	PortCheck Mode = 4
 )
+
+type AppData struct {
+	ApiKey    string
+	Databases *DatabaseStore
+	Proxies   []netip.Prefix
+}
 
 type names struct {
 	DE   string `maxminddb:"de" json:"de,omitempty"`
