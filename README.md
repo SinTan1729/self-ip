@@ -11,6 +11,9 @@ It can also check for whether a port is open on a given IP address.
 It is highly recommended that you use it behind a reverse proxy e.g.
 [Caddy](https://caddyserver.com).
 
+**Make sure you add a `SELF_IP_TRUSTED_PROXIES` environment variable with your reverse proxy's
+IP subnet, so that `self-ip` gets the correct client IP.**
+
 ## Features
 
 - Self-hosted HTTP API
@@ -167,6 +170,8 @@ curl \
 ```
 
 If not provided, `port` defaults to `443`.
+
+_Note: Private IPs, loopback IPs etc. are automatically blocked to prevent abuse._
 
 Example response:
 

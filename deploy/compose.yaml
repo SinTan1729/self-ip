@@ -8,6 +8,7 @@ services:
       # CHANGE IT BEFORE DEPLOYMENT, THIS IS GIBBERISH
       # Make sure that you replace $ with $$ before putting the digest here
       SELF_IP_API_KEY: "$$argon2id$$v=19$$m=16,t=2,p=2$$c3F3ZGFkdsdedadaddasdadscaafhjasajsnjasbfjfas"
+      # SELF_IP_TRUSTED_PROXIES: 10.89.0.0/24
       TZ: Asia/Kolkata
 
     volumes:
