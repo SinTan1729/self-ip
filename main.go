@@ -60,23 +60,33 @@ func basicHandler(w http.ResponseWriter, r *http.Request, databases *i.DatabaseS
 }
 
 func portHandler(w http.ResponseWriter, r *http.Request, apiKey string) {
+	mode := i.PortCheck
 	url, err := url.Parse(r.RequestURI)
 	if err != nil {
 		log.Fatal(err)
 	}
-	_, queryIP := i.GetClientIP(url, r)
+	clientIP, queryIP := i.GetClientIP(url, r)
 
+	badRequest := false
+	port := 443 // Default to https port
+	providedPort := r.URL.Query().Get("port")
+	if p, err := strconv.Atoi(providedPort); err == nil && p > 0 && p < 65536 {
+		port = p
+	} else if providedPort != "" {
+		badRequest = true
+	}
 	if !i.CheckAuth(apiKey, r.Header.Get("X-API-Key")) {
-		// log.Println(i.LogText(clientIP, mode, queryIP, i.Unauthorized))
+		log.Println(i.LogText(clientIP, mode, fmt.Sprintf("%s:%d", queryIP, port), i.Unauthorized))
 		w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
 		http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 		return
 	}
-
-	port := 80
-	if p, err := strconv.Atoi(r.URL.Query().Get("port")); err == nil && p > 0 && p < 65536 {
-		port = p
+	if badRequest {
+		log.Println(i.LogText(clientIP, mode, queryIP, i.BadAttempt))
+		http.Error(w, "400 Bad Request", http.StatusBadRequest)
+		return
 	}
+
 	address := fmt.Sprintf("[%s]:%d", queryIP, port)
 	conn, err := net.DialTimeout("tcp", address, 2*time.Second)
 
@@ -105,6 +115,8 @@ func portHandler(w http.ResponseWriter, r *http.Request, apiKey string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	log.Println(i.LogText(clientIP, mode, fmt.Sprintf("%s:%d", queryIP, port), i.GoodAttempt))
 	fmt.Fprintf(w, string(jsonData))
 }
 
@@ -139,7 +151,7 @@ func main() {
 		switch r.URL.Path {
 		case "/", "/json", "/api":
 			basicHandler(w, r, databases, apiKey)
-		case "/port":
+		case "/portcheck":
 			portHandler(w, r, apiKey)
 		default:
 			http.NotFound(w, r)

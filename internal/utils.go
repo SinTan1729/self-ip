@@ -61,17 +61,18 @@ func GetClientIP(url *url.URL, r *http.Request) (string, string) {
 	customIP := url.Query().Get("ip")
 	var queryIP string
 	var clientIP string
+
 	forwarded := r.Header.Get("X-Forwarded-For")
 	if forwarded != "" {
 		ips := strings.Split(forwarded, ",")
-		return strings.TrimSpace(ips[0]), queryIP
+		clientIP = strings.TrimSpace(ips[0])
 	}
 
 	if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
 		clientIP = realIP
 	}
 
-	if ip, _, err := net.SplitHostPort(r.RemoteAddr); err != nil {
+	if ip, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
 		clientIP = ip
 	}
 
@@ -81,6 +82,16 @@ func GetClientIP(url *url.URL, r *http.Request) (string, string) {
 		queryIP = clientIP
 	}
 	return clientIP, queryIP
+}
+
+func calcIPDecimal(rawIP string) *JSONBigInt {
+	ip := net.ParseIP(rawIP)
+	bigInt := big.NewInt(0)
+	if v4 := ip.To4(); v4 != nil {
+		return (*JSONBigInt)(bigInt.SetBytes(v4))
+	} else {
+		return (*JSONBigInt)(bigInt.SetBytes(ip.To16()))
+	}
 }
 
 func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, mode Mode, uAgent string) []byte {
@@ -173,14 +184,7 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 	case EchoIP:
 		var res echoIPResponse
 		res.IP = rawIP
-		ip := net.ParseIP(rawIP)
-		bigInt := big.NewInt(0)
-		if v4 := ip.To4(); v4 != nil {
-			res.IPDecimal = (*JSONBigInt)(bigInt.SetBytes(v4))
-		} else {
-			res.IPDecimal = (*JSONBigInt)(bigInt.SetBytes(ip.To16()))
-		}
-		fmt.Println(res.IPDecimal)
+		res.IPDecimal = calcIPDecimal(rawIP)
 		res.Country = record.Country.Names.EN
 		res.CountryISO = record.Country.ISOCode
 		res.CountryEU = slices.Contains(EUCountries, res.CountryISO)
@@ -213,6 +217,7 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 		if err == nil && len(names) > 0 {
 			record.HostName = strings.TrimRight(names[0], ".")
 		}
+		record.IPDecimal = calcIPDecimal(rawIP)
 		jsonData, err := json.Marshal(record)
 		if err != nil {
 			log.Fatal(err)
@@ -258,9 +263,11 @@ func LogText(clientIP string, mode Mode, queryIP string, attemptType uint) strin
 	case Full:
 		modeText = ", mode: Full"
 	case IPOnly:
-		modeText = ", mode: IPOnly"
+		modeText = ", mode: IP only"
 	case EchoIP:
-		modeText = ", mode: EchoIP"
+		modeText = ", mode: echoip"
+	case PortCheck:
+		modeText = ", mode: Port check"
 	}
 
 	if queryIP != clientIP {

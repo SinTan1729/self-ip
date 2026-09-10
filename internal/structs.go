@@ -5,10 +5,11 @@ import "math/big"
 type Mode uint
 
 const (
-	Default Mode = 0
-	IPOnly  Mode = 1
-	EchoIP  Mode = 2
-	Full    Mode = 3
+	Default   Mode = 0
+	IPOnly    Mode = 1
+	EchoIP    Mode = 2
+	Full      Mode = 3
+	PortCheck Mode = 4
 )
 
 type names struct {
@@ -60,8 +61,16 @@ type userAgent struct {
 	Comment  string `json:"comment,omitempty"`
 	RawValue string `json:"raw_value,omitempty"`
 }
+
+type JSONBigInt big.Int
+
+func (n JSONBigInt) MarshalJSON() ([]byte, error) {
+	return []byte((*big.Int)(&n).String()), nil
+}
+
 type fullResponse struct {
 	IP                string        `json:"ip"`
+	IPDecimal         *JSONBigInt   `json:"ip_decimal"`
 	HostName          string        `json:"hostname,omitempty"`
 	City              city          `maxminddb:"city" json:"city,omitempty"`
 	Continent         continent     `maxminddb:"continent" json:"continent,omitempty"`
@@ -91,12 +100,6 @@ type defaultResponse struct {
 	Location     *locationInfo `json:"location,omitempty"`
 	TimeZone     string        `json:"tz,omitempty"`
 	Organization string        `json:"org,omitempty"`
-}
-
-type JSONBigInt big.Int
-
-func (n JSONBigInt) MarshalJSON() ([]byte, error) {
-	return []byte((*big.Int)(&n).String()), nil
 }
 
 type echoIPResponse struct {
