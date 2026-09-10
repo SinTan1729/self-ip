@@ -166,12 +166,13 @@ func main() {
 	var trustedProxies []netip.Prefix
 	go databases.ScheduleUpdates()
 	if trustedProxiesEnv, flag := os.LookupEnv("TRUSTED_PROXIES"); flag {
-		log.Println("Found provided trusted proxies:", trustedProxiesEnv)
-		if p, err := i.ParseTrustedProxies(trustedProxiesEnv); err != nil {
+		if p, err := i.ParseTrustedProxies(trustedProxiesEnv); err == nil {
 			trustedProxies = p
+		} else {
 			log.Fatal("Error processing trusted proxies:", err)
 		}
 	}
+	log.Println("Using trusted proxies:", trustedProxies)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {

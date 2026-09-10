@@ -296,6 +296,17 @@ func ParseTrustedProxies(value string) ([]netip.Prefix, error) {
 		if s == "" {
 			continue
 		}
+		if !strings.Contains(s, "/") {
+			ip, err := netip.ParseAddr(s)
+			if err != nil {
+				return nil, fmt.Errorf("invalid trusted proxy IP %q: %w", s, err)
+			}
+			if ip.Is4() {
+				s += "/32"
+			} else {
+				s += "/128"
+			}
+		}
 
 		prefix, err := netip.ParsePrefix(s)
 		if err != nil {
