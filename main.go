@@ -183,7 +183,7 @@ func main() {
 		Proxies:   trustedProxies,
 	}
 	if ownIPs := i.GetOwnIPs(); ownIPs != nil {
-		log.Println("Resolved own IPs:", i.PrettyPrintArray(ownIPs))
+		log.Println("Resolved own IP(s):", i.PrettyPrintArray(ownIPs))
 		appData.OwnIP = ownIPs
 	}
 
