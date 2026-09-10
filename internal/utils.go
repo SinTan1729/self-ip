@@ -66,13 +66,9 @@ func GetClientIP(url *url.URL, r *http.Request) (string, string) {
 	if forwarded != "" {
 		ips := strings.Split(forwarded, ",")
 		clientIP = strings.TrimSpace(ips[0])
-	}
-
-	if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
+	} else if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
 		clientIP = realIP
-	}
-
-	if ip, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+	} else if ip, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
 		clientIP = ip
 	}
 
