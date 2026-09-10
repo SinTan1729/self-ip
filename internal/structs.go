@@ -62,6 +62,7 @@ type userAgent struct {
 }
 type fullResponse struct {
 	IP                string        `json:"ip"`
+	HostName          string        `json:"hostname,omitempty"`
 	City              city          `maxminddb:"city" json:"city,omitempty"`
 	Continent         continent     `maxminddb:"continent" json:"continent,omitempty"`
 	Country           country       `maxminddb:"country" json:"country,omitempty"`
@@ -115,6 +116,23 @@ type echoIPResponse struct {
 	ASN        string      `json:"asn,omitempty"`
 	ASNOrg     string      `json:"asn_org,omitempty"`
 	UserAgent  *userAgent  `json:"user_agent,omitempty"`
+}
+
+type PortStatus string
+
+const (
+	PortOpen        PortStatus = "open"        // TCP handshake completed
+	PortRefused     PortStatus = "refused"     // RST (nothing listening)
+	PortTimeout     PortStatus = "timeout"     // Packet dropped
+	PortUnreachable PortStatus = "unreachable" // Host/Network Unreachable
+	PortUnknown     PortStatus = "unknown"     // Unhandled error
+)
+
+type PortResponse struct {
+	IP        string     `json:"ip"`
+	Port      uint16     `json:"port"`
+	Reachable bool       `json:"reachable"`
+	Status    PortStatus `json:"status"`
 }
 
 type LogWriter struct {

@@ -1,11 +1,17 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
+	"syscall"
+	"time"
 
 	i "github.com/SinTan1729/self-ip/internal"
 )
@@ -17,15 +23,7 @@ func basicHandler(w http.ResponseWriter, r *http.Request, databases *i.DatabaseS
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	clientIP := i.GetClientIP(r)
-	customIP := url.Query().Get("ip")
-	var queryIP string
-	if customIP != "" {
-		queryIP = customIP
-	} else {
-		queryIP = clientIP
-	}
+	clientIP, queryIP := i.GetClientIP(url, r)
 
 	var mode i.Mode
 	switch url.Query().Get("mode") {
@@ -61,6 +59,55 @@ func basicHandler(w http.ResponseWriter, r *http.Request, databases *i.DatabaseS
 	fmt.Fprintf(w, "%s", data)
 }
 
+func portHandler(w http.ResponseWriter, r *http.Request, apiKey string) {
+	url, err := url.Parse(r.RequestURI)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, queryIP := i.GetClientIP(url, r)
+
+	if !i.CheckAuth(apiKey, r.Header.Get("X-API-Key")) {
+		// log.Println(i.LogText(clientIP, mode, queryIP, i.Unauthorized))
+		w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
+		http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	port := 80
+	if p, err := strconv.Atoi(r.URL.Query().Get("port")); err == nil && p > 0 && p < 65536 {
+		port = p
+	}
+	address := fmt.Sprintf("[%s]:%d", queryIP, port)
+	conn, err := net.DialTimeout("tcp", address, 2*time.Second)
+
+	var res i.PortResponse
+	res.IP = queryIP
+	res.Port = uint16(port)
+
+	if err != nil {
+		switch {
+		case os.IsTimeout(err):
+			res.Status = i.PortTimeout
+		case errors.Is(err, syscall.ECONNREFUSED):
+			res.Status = i.PortRefused
+		case errors.Is(err, syscall.EHOSTUNREACH) || errors.Is(err, syscall.ENETUNREACH):
+			res.Status = i.PortUnreachable
+		default:
+			res.Status = i.PortUnknown
+		}
+	} else {
+		res.Status = i.PortOpen
+		defer conn.Close()
+	}
+	res.Reachable = res.Status == i.PortOpen
+
+	jsonData, err := json.Marshal(res)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Fprintf(w, string(jsonData))
+}
+
 func main() {
 	log.SetFlags(0)
 	log.SetOutput(new(i.LogWriter))
@@ -92,6 +139,8 @@ func main() {
 		switch r.URL.Path {
 		case "/", "/json", "/api":
 			basicHandler(w, r, databases, apiKey)
+		case "/port":
+			portHandler(w, r, apiKey)
 		default:
 			http.NotFound(w, r)
 		}

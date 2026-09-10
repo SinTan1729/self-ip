@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"net/url"
 	"os"
 	"slices"
 	"strings"
@@ -56,24 +57,30 @@ func downloadFile(ctx context.Context, url, filename string) error {
 	return err
 }
 
-func GetClientIP(r *http.Request) string {
+func GetClientIP(url *url.URL, r *http.Request) (string, string) {
+	customIP := url.Query().Get("ip")
+	var queryIP string
+	var clientIP string
 	forwarded := r.Header.Get("X-Forwarded-For")
 	if forwarded != "" {
 		ips := strings.Split(forwarded, ",")
-		return strings.TrimSpace(ips[0])
+		return strings.TrimSpace(ips[0]), queryIP
 	}
 
-	realIP := r.Header.Get("X-Real-IP")
-	if realIP != "" {
-		return realIP
+	if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
+		clientIP = realIP
 	}
 
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
+	if ip, _, err := net.SplitHostPort(r.RemoteAddr); err != nil {
+		clientIP = ip
 	}
 
-	return ip
+	if customIP != "" {
+		queryIP = customIP
+	} else {
+		queryIP = clientIP
+	}
+	return clientIP, queryIP
 }
 
 func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, mode Mode, uAgent string) []byte {
@@ -167,10 +174,11 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 		var res echoIPResponse
 		res.IP = rawIP
 		ip := net.ParseIP(rawIP)
+		bigInt := big.NewInt(0)
 		if v4 := ip.To4(); v4 != nil {
-			res.IPDecimal = (*JSONBigInt)(new(big.Int).SetBytes(v4))
+			res.IPDecimal = (*JSONBigInt)(bigInt.SetBytes(v4))
 		} else {
-			res.IPDecimal = (*JSONBigInt)(new(big.Int).SetBytes(ip.To16()))
+			res.IPDecimal = (*JSONBigInt)(bigInt.SetBytes(ip.To16()))
 		}
 		fmt.Println(res.IPDecimal)
 		res.Country = record.Country.Names.EN
@@ -201,6 +209,10 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 		return jsonData
 
 	default: // mode = Full
+		names, err := net.LookupAddr(rawIP)
+		if err == nil && len(names) > 0 {
+			record.HostName = strings.TrimRight(names[0], ".")
+		}
 		jsonData, err := json.Marshal(record)
 		if err != nil {
 			log.Fatal(err)
