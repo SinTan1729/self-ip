@@ -10,6 +10,12 @@ services:
       SELF_IP_API_KEY: "$$argon2id$$v=19$$m=16,t=2,p=2$$c3F3ZGFkdsdedadaddasdadscaafhjasajsnjasbfjfas"
       # SELF_IP_TRUSTED_PROXIES: 10.89.0.0/24
       TZ: Asia/Kolkata
+    healthcheck:
+      test: CMD-SHELL wget -qO- http://127.0.0.1:1729/healthz || exit 1
+      interval: 60s
+      retries: 3
+      start_period: 10s
+      timeout: 10s
 
     volumes:
       - self-ip:/app/maxmind-databases
