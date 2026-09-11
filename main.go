@@ -24,6 +24,7 @@ var Version = "unknown"
 
 func basicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	url, err := url.Parse(r.RequestURI)
+	i.Check(err)
 	clientIP, queryIP := i.GetClientIP(url, r, appData.Proxies)
 
 	modeStr := url.Query().Get("mode")
@@ -39,7 +40,6 @@ func basicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 		log.Println(i.LogText(clientIP, i.IPOnly, clientIP, i.GoodAttempt))
 		return
 	}
-	i.Check(err)
 
 	var parsedQueryIP netip.Addr
 	badIP := false
