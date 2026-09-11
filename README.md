@@ -3,7 +3,7 @@
 A small self-hosted IP geolocation and port checking API written in Go.
 
 The server determines the client's IP address or accepts an IP address through
-a query parameter, then returns geolocation and ASN information using the
+a query parameter, then returns geolocation and ASN information using
 [MaxMind GeoLite2](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) databases.
 
 It can also check for whether a port is open on a given IP address.
@@ -27,7 +27,8 @@ IP subnet, so that `self-ip` gets the correct client IP.**
 
 On startup, the server checks the latest release of the
 [P3TERX/GeoLite.mmdb](https://github.com/P3TERX/GeoLite.mmdb) repository.
-Then, they're checked once a day around 7am.
+Then, they're checked once a day around 7am. When found, new releases
+of the databases are automatically downloaded.
 
 ## Deployment
 
