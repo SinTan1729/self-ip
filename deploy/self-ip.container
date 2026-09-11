@@ -6,6 +6,7 @@ StartLimitIntervalSec=30m
 [Container]
 ContainerName=self-ip
 Image=ghcr.io/sintan1729/self-ip:latest
+PublishPort=3213:3213
 AutoUpdate=registry
 # Volumes
 Volume=self-ip:/app/maxmind-databases

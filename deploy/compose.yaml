@@ -3,6 +3,8 @@ services:
     container_name: self-ip
     image: ghcr.io/sintan1729/self-ip:latest
     restart: on-failure:5
+    ports:
+      - "3213:3213"
 
     environment:
       # CHANGE IT BEFORE DEPLOYMENT, THIS IS GIBBERISH
