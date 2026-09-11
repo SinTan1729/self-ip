@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"net/netip"
@@ -64,6 +65,15 @@ func main() {
 		appData.OwnIP = ownIPs
 	}
 
+	var listenAddr string
+	listenPort := "3213"
+	if a, flag := os.LookupEnv("SELF_IP_LISTEN_ADDR"); flag {
+		listenAddr = a
+	}
+	if p, flag := os.LookupEnv("SELF_IP_LISTEN_PORT"); flag {
+		listenPort = p
+	}
+
 	publicMux := http.NewServeMux()
 	publicMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -75,8 +85,9 @@ func main() {
 			http.Error(w, "404 Page Not Found", http.StatusNotFound)
 		}
 	})
+	listen := fmt.Sprintf("%s:%s", listenAddr, listenPort)
 	public := &http.Server{
-		Addr:    ":3213",
+		Addr:    listen,
 		Handler: publicMux,
 	}
 
@@ -91,27 +102,51 @@ func main() {
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sig)
 
+	errc := make(chan error, 2)
 	go func() {
 		if err := health.ListenAndServe(); err != nil &&
 			!errors.Is(err, http.ErrServerClosed) {
-			log.Printf("health: %v", err)
+			errc <- fmt.Errorf("health: %w", err)
 		}
 	}()
-
 	go func() {
 		if err := public.ListenAndServe(); err != nil &&
 			!errors.Is(err, http.ErrServerClosed) {
-			log.Printf("public: %v", err)
+			errc <- fmt.Errorf("public: %w", err)
 		}
 	}()
 
-	log.Println("Server running at http://localhost:3213")
-	<-sig
+	var reason error
+	timer := time.NewTimer(100 * time.Millisecond)
+	select {
+	case reason = <-errc:
+		timer.Stop()
+	case <-sig:
+		timer.Stop()
+	case <-timer.C:
+		log.Println("Started listening to", listen)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		select {
+		case reason = <-errc:
+		case <-sig:
+		}
+	}
+
+	if reason != nil {
+		log.Printf("Server failed: %v; shutting down", reason)
+	} else {
+		log.Println("Shutting down")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	public.Shutdown(ctx)
-	health.Shutdown(ctx)
+	if err := public.Shutdown(ctx); err != nil {
+		log.Printf("Server public shutdown: %v", err)
+	}
+	if err := health.Shutdown(ctx); err != nil {
+		log.Printf("Server health shutdown: %v", err)
+	}
 }
