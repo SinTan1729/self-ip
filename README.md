@@ -40,12 +40,14 @@ Example `docker compose` and `podman quadlet` files are provided in the
 
 ## Environment Variables
 
-| Variable name             | Description                                                                                                                                                                                                                 |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SELF_IP_API_KEY`         | Argon2 encrypted API Key. (Mandatory)                                                                                                                                                                                       |
-| `SELF_IP_TRUSTED_PROXIES` | List of trusted proxy IPs/subnet. If the request comes from one of these, the proxy headers will be used to figure out the client's real IP. Useful when the server if behind a reverse proxy, which is highly recommended. |
-| `SELF_IP_LISTEN_ADDR`     | The address the server listens to. Defaults to empty i.e. all addresses.                                                                                                                                                    |
-| `SELF_IP_LISTEN_PORT`     | The port the server listens to. Defaults to `3213`.                                                                                                                                                                         |
+| Variable name                 | Description                                                                                                                                                                                                                 |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SELF_IP_API_KEY`             | Argon2 encrypted API Key. (Mandatory)                                                                                                                                                                                       |
+| `SELF_IP_TRUSTED_PROXIES`     | List of trusted proxy IPs/subnet. If the request comes from one of these, the proxy headers will be used to figure out the client's real IP. Useful when the server if behind a reverse proxy, which is highly recommended. |
+| `SELF_IP_LISTEN_ADDR`         | The address the server listens to. Defaults to empty i.e. all addresses.                                                                                                                                                    |
+| `SELF_IP_LISTEN_PORT`         | The port the server listens to. Defaults to `3213`.                                                                                                                                                                         |
+| `SELF_IP_ENABLE_PORT_CHECKER` | Enables port checker when set to `True`.                                                                                                                                                                                    |
+| `SELF_IP_ENABLE_HOSTNAME`     | Enables hostname resolution in full mode when set to `True`.                                                                                                                                                                |
 
 ## Building Locally
 

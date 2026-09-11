@@ -13,6 +13,8 @@ services:
       # SELF_IP_TRUSTED_PROXIES: 10.89.0.0/24
       # SELF_IP_LISTEN_ADDR: 0.0.0.0
       # SELF_IP_LISTEN_PORT: 1122
+      # SELF_IP_ENABLE_PORT_CHECKER: True
+      # SELF_IP_ENABLE_HOSTNAME: True
       TZ: Asia/Kolkata
     healthcheck:
       test: CMD-SHELL wget -qO- http://127.0.0.1:1729/healthz || exit 1

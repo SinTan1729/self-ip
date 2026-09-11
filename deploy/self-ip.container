@@ -18,6 +18,8 @@ Environment=SELF_IP_API_KEY=$$argon2id$$v=19$$m=16,t=2,p=2$$c3F3ZGFkdsdedadaddas
 # Environment=SELF_IP_TRUSTED_PROXIES=10.89.0.0/24
 # Environment=SELF_IP_LISTEN_ADDR=0.0.0.0
 # Environment=SELF_IP_LISTEN_PORT=1122
+# Environment=SELF_IP_ENABLE_PORT_CHECKER=True
+# Environment=SELF_IP_ENABLE_HOSTNAME=True
 Environment=TZ=Asia/Kolkata
 # Health check
 HealthCmd=CMD-SHELL wget -qO- http://127.0.0.1:1729/healthz || exit 1
