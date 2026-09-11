@@ -120,7 +120,7 @@ The default response returns a JSON representation in the following format.
     "long": -12.5561,
     "postal": "21231"
   },
-  "tz": "Asia/Kolkata",
+  "tz": "Example/Timezone",
   "org": "A12345 Example Org."
 }
 ```
@@ -155,7 +155,7 @@ The default response returns a flat JSON representation in the following format.
   "city": "Example City",
   "region": "Example Region",
   "country": "Example Country",
-  "tz": "Asia/Kolkata"
+  "tz": "Example/Timezone"
 }
 ```
 
