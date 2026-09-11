@@ -135,7 +135,7 @@ func main() {
 	}
 
 	if reason != nil {
-		log.Printf("Server failed: %v; shutting down", reason)
+		log.Printf(i.Red+"Server failed: %v; shutting down"+i.Reset, reason)
 	} else {
 		log.Println("Shutting down")
 	}
@@ -144,9 +144,9 @@ func main() {
 	defer cancel()
 
 	if err := public.Shutdown(ctx); err != nil {
-		log.Printf("Server public shutdown: %v", err)
+		log.Printf(i.Red+"Server public shutdown: %v"+i.Reset, err)
 	}
 	if err := health.Shutdown(ctx); err != nil {
-		log.Printf("Server health shutdown: %v", err)
+		log.Printf(i.Red+"Server health shutdown: %v"+i.Reset, err)
 	}
 }
