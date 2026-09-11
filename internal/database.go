@@ -17,7 +17,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/oschwald/maxminddb-golang/v2"
 )
 
@@ -128,22 +127,22 @@ func GetDatabases() {
 	err := os.MkdirAll("./maxmind-databases", 0755)
 	Check(err)
 
-	curVer := semver.MustParse("0.0.0")
-	f, err := os.ReadFile("./maxmind-databases/version")
-	if err == nil {
-		curVer, err = semver.NewVersion(strings.TrimSpace(string(f)))
-		if err != nil {
-			curVer = semver.MustParse("0.0.0")
+	var (
+		curVer time.Time
+		newVer time.Time
+	)
+
+	if s, err := os.ReadFile("./maxmind-databases/version"); err == nil {
+		if v, err := time.Parse(time.DateOnly, strings.ReplaceAll(strings.TrimSpace(string(s)), ".", "-")); err == nil {
+			curVer = v
 		}
 	}
 
-	_, err = os.Stat("./maxmind-databases/GeoLite2-City.mmdb")
-	if err != nil {
-		curVer = semver.MustParse("0.0.0")
-	}
-	_, err = os.Stat("./maxmind-databases/GeoLite2-ASN.mmdb")
-	if err != nil {
-		curVer = semver.MustParse("0.0.0")
+	for _, db := range []string{"City", "ASN"} {
+		_, err = os.Stat("./maxmind-databases/GeoLite2-" + db + ".mmdb")
+		if err != nil {
+			curVer = time.Time{}
+		}
 	}
 
 	resp, err := http.Get("https://api.github.com/repos/P3TERX/GeoLite.mmdb/releases/latest")
@@ -166,16 +165,15 @@ func GetDatabases() {
 		log.Println("Failed to get latest database version data.")
 		return
 	}
-	newVer, err := semver.NewVersion(release.TagName)
-	if err != nil {
+	if newVer, err = time.Parse(time.DateOnly, strings.ReplaceAll(release.TagName, ".", "-")); err != nil {
 		log.Println("Failed to get latest database version data.")
 		return
 	}
 
-	if newVer.GreaterThan(curVer) {
-		log.Println("New version of databases available:", newVer)
+	if newVer.After(curVer) {
+		log.Println("New version of databases available:", newVer.Format(time.DateOnly))
 	} else {
-		log.Println("Already have the latest databases:", curVer)
+		log.Println("Already have the latest databases:", curVer.Format(time.DateOnly))
 		return
 	}
 
@@ -261,7 +259,7 @@ func GetDatabases() {
 			return
 		}
 	}
-	err = os.WriteFile("./maxmind-databases/version.tmp", []byte(newVer.Original()), 0644)
+	err = os.WriteFile("./maxmind-databases/version.tmp", []byte(release.TagName), 0644)
 	Check(err)
 	files := []string{"GeoLite2-City.mmdb", "GeoLite2-ASN.mmdb", "version"}
 	for _, file := range files {
