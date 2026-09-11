@@ -6,6 +6,7 @@ StartLimitIntervalSec=30m
 [Container]
 ContainerName=self-ip
 Image=ghcr.io/sintan1729/self-ip:latest
+# Adjust if needed
 PublishPort=3213:3213
 AutoUpdate=registry
 # Volumes
@@ -14,7 +15,9 @@ Volume=self-ip:/app/maxmind-databases
 # CHANGE IT BEFORE DEPLOYMENT, THIS IS GIBBERISH
 # Make sure that you replace $ with $$ before putting the digest here
 Environment=SELF_IP_API_KEY=$$argon2id$$v=19$$m=16,t=2,p=2$$c3F3ZGFkdsdedadaddasdadscaafhjasajsnjasbfjfas
-# Environment=SELF_IP_TRUSTED_PROXIES: 10.89.0.0/24
+# Environment=SELF_IP_TRUSTED_PROXIES=10.89.0.0/24
+# Environment=SELF_IP_LISTEN_ADDR=0.0.0.0
+# Environment=SELF_IP_LISTEN_PORT=1122
 Environment=TZ=Asia/Kolkata
 # Health check
 HealthCmd=CMD-SHELL wget -qO- http://127.0.0.1:1729/healthz || exit 1

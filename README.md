@@ -44,6 +44,8 @@ Example `docker compose` and `podman quadlet` files are provided in the
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `SELF_IP_API_KEY`         | Argon2 encrypted API Key. (Mandatory)                                                                                                                                                                                       |
 | `SELF_IP_TRUSTED_PROXIES` | List of trusted proxy IPs/subnet. If the request comes from one of these, the proxy headers will be used to figure out the client's real IP. Useful when the server if behind a reverse proxy, which is highly recommended. |
+| `SELF_IP_LISTEN_ADDR`     | The address the server listens to. Defaults to empty i.e. all addresses.                                                                                                                                                    |
+| `SELF_IP_LISTEN_PORT`     | The port the server listens to. Defaults to `3213`.                                                                                                                                                                         |
 
 ## Building Locally
 
@@ -83,7 +85,8 @@ curl \
 ## Allowed paths
 
 The paths `/`, `/json`, `/api` are used for IP geolocation check. They return the same data.
-The path `/portcheck` is used for `port` probing.
+The path `/portcheck` is used for `port` probing. There's a `/healthz` path listening exclusively
+to `127.0.0.1:1729`. Only use it for internal healthchecks.
 Any other paths will return:
 
 ```text
