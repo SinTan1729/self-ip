@@ -51,8 +51,6 @@ func basicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 
 	var mode i.Mode
 	switch modeStr {
-	case "ip_only":
-		mode = i.IPOnly
 	case "full":
 		mode = i.Full
 	case "echoip":
