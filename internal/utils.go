@@ -104,10 +104,7 @@ func calcIPDecimal(ip netip.Addr) *JSONBigInt {
 }
 
 func getGeoData(ip netip.Addr, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, mode Mode, uAgent string) []byte {
-	if mode == IPOnly {
-		return []byte(ip.String())
-	}
-
+	// IP Only mode doesn't reach here
 	getAgent := func(uAgent string) userAgent {
 		uAgentParts := strings.SplitN(uAgent, " ", 2)
 		var uAgentComment string

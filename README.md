@@ -127,7 +127,7 @@ The default response returns a JSON representation in the following format.
 
 ### IP-only mode
 
-Return only the queried IP address.
+Return only the queried IP address. It disregards the provided `ip` query string.
 
 ```bash
 curl \
@@ -215,11 +215,11 @@ It returns information in the following format.
 
 ## Query Parameters
 
-| Parameter | Description                                                                         |
-| --------- | ----------------------------------------------------------------------------------- |
-| `ip`      | Optional IP address to look up. If omitted, the client's IP address is used.        |
-| `mode`    | Response mode: default, `ip_only`, `echoip`, `short` or `full`.                     |
-| `port`    | Optional port to probe. If ommitted, defaults to `443`. Only works in `/portcheck`. |
+| Parameter | Description                                                                                             |
+| --------- | ------------------------------------------------------------------------------------------------------- |
+| `ip`      | Optional IP address to look up. If omitted, the client's IP address is used. Ignored in `ip_only` mode. |
+| `mode`    | Response mode: default, `ip_only`, `echoip`, `short` or `full`.                                         |
+| `port`    | Optional port to probe. If ommitted, defaults to `443`. Only works in `/portcheck`.                     |
 
 ## Authentication
 

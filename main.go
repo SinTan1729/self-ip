@@ -24,10 +24,23 @@ var Version = "unknown"
 
 func basicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	url, err := url.Parse(r.RequestURI)
-	if err != nil {
-		log.Fatal(err)
-	}
 	clientIP, queryIP := i.GetClientIP(url, r, appData.Proxies)
+
+	modeStr := url.Query().Get("mode")
+	// Short circuit for IP Only mode
+	if modeStr == "ip_only" {
+		if !i.CheckAuth(appData.ApiKey, r.Header.Get("X-API-Key")) {
+			log.Println(i.LogText(clientIP, i.IPOnly, queryIP, i.Unauthorized))
+			w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
+			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		fmt.Fprintf(w, clientIP)
+		log.Println(i.LogText(clientIP, i.IPOnly, clientIP, i.GoodAttempt))
+		return
+	}
+	i.Check(err)
+
 	var parsedQueryIP netip.Addr
 	badIP := false
 	if ip, err := netip.ParseAddr(queryIP); err != nil {
@@ -37,7 +50,7 @@ func basicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	}
 
 	var mode i.Mode
-	switch url.Query().Get("mode") {
+	switch modeStr {
 	case "ip_only":
 		mode = i.IPOnly
 	case "full":
