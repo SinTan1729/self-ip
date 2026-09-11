@@ -154,6 +154,20 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 	case IPOnly:
 		return []byte(rawIP)
 
+	case Short:
+		var res shortResponse
+		res.IP = rawIP
+		res.City = record.City.Names.EN
+		if len(record.Subdivisions) > 0 {
+			res.Region = record.Subdivisions[0].Names.EN
+		}
+		res.Country = record.Country.Names.EN
+		res.TimeZone = record.Location.TimeZone
+
+		jsonData, err := json.Marshal(res)
+		Check(err)
+		return jsonData
+
 	case Default:
 		var res defaultResponse
 		res.IP = rawIP
@@ -185,9 +199,7 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 		}
 
 		jsonData, err := json.Marshal(res)
-		if err != nil {
-			log.Fatal(err)
-		}
+		Check(err)
 		return jsonData
 
 	case EchoIP:
@@ -219,9 +231,7 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 		res.UserAgent = &record.UserAgent
 
 		jsonData, err := json.Marshal(res)
-		if err != nil {
-			log.Fatal(err)
-		}
+		Check(err)
 		return jsonData
 
 	default: // mode = Full
@@ -230,10 +240,9 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 			record.HostName = strings.TrimRight(names[0], ".")
 		}
 		record.IPDecimal = calcIPDecimal(rawIP)
+
 		jsonData, err := json.Marshal(record)
-		if err != nil {
-			log.Fatal(err)
-		}
+		Check(err)
 		return jsonData
 	}
 }

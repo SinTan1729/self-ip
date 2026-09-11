@@ -37,6 +37,8 @@ func basicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 		mode = i.Full
 	case "echoip":
 		mode = i.EchoIP
+	case "short":
+		mode = i.Short
 	case "", "default":
 		mode = i.Default
 	default:

@@ -10,9 +10,10 @@ type Mode uint
 const (
 	Default   Mode = 0
 	IPOnly    Mode = 1
-	EchoIP    Mode = 2
-	Full      Mode = 3
-	PortCheck Mode = 4
+	Short     Mode = 2
+	EchoIP    Mode = 3
+	Full      Mode = 4
+	PortCheck Mode = 5
 )
 
 type AppData struct {
@@ -129,6 +130,14 @@ type echoIPResponse struct {
 	ASN        string      `json:"asn,omitempty"`
 	ASNOrg     string      `json:"asn_org,omitempty"`
 	UserAgent  *userAgent  `json:"user_agent,omitempty"`
+}
+
+type shortResponse struct {
+	IP       string `json:"ip"`
+	City     string `json:"city,omitempty"`
+	Region   string `json:"region,omitempty"`
+	Country  string `json:"country,omitempty"`
+	TimeZone string `json:"tz,omitempty"`
 }
 
 type PortStatus string
