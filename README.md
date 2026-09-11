@@ -93,7 +93,15 @@ Any other paths will return:
 
 ### Default mode
 
-The default response returns a compact JSON representation containing information such as:
+The default response.
+
+```bash
+curl \
+  -H "X-API-Key: your-secret-api-key" \
+  "http://localhost:3213?ip=8.8.8.8"
+```
+
+The default response returns a JSON representation in the following format.
 
 ```json
 {
@@ -117,17 +125,9 @@ The default response returns a compact JSON representation containing informatio
 }
 ```
 
-Example:
-
-```bash
-curl \
-  -H "X-API-Key: your-secret-api-key" \
-  "http://localhost:3213?ip=8.8.8.8"
-```
-
 ### IP-only mode
 
-Return only the queried IP address:
+Return only the queried IP address.
 
 ```bash
 curl \
@@ -136,6 +136,28 @@ curl \
 ```
 
 The response content type is `text/plain` e.g. `1.2.3.4`.
+
+### Short mode
+
+Return only essential information.
+
+```bash
+curl \
+  -H "X-API-Key: your-secret-api-key" \
+  "http://localhost:3213?ip=8.8.8.8&mode=short"
+```
+
+The default response returns a flat JSON representation in the following format.
+
+```json
+{
+  "ip": "1.2.3.4",
+  "city": "Example City",
+  "region": "Example Region",
+  "country": "Example Country",
+  "tz": "Asia/Kolkata"
+}
+```
 
 ### `echoip` mode
 
@@ -154,7 +176,7 @@ replacement for `ifconfig.co`.
 
 ### Full mode
 
-Return the complete geolocation record:
+Return the complete geolocation record.
 
 ```bash
 curl \
@@ -180,7 +202,7 @@ If not provided, `port` defaults to `443`.
 
 _Note: Private IPs, loopback IPs etc. are automatically blocked to prevent abuse._
 
-Example response:
+It returns information in the following format.
 
 ```json
 {
@@ -196,7 +218,7 @@ Example response:
 | Parameter | Description                                                                         |
 | --------- | ----------------------------------------------------------------------------------- |
 | `ip`      | Optional IP address to look up. If omitted, the client's IP address is used.        |
-| `mode`    | Response mode: default, `ip_only`, `echoip` or `full`.                              |
+| `mode`    | Response mode: default, `ip_only`, `echoip`, `short` or `full`.                     |
 | `port`    | Optional port to probe. If ommitted, defaults to `443`. Only works in `/portcheck`. |
 
 ## Authentication
