@@ -9,7 +9,7 @@ test:
 	go test ./handlers
 
 run: build
-	SELF_IP_API_KEY='$(SELF_IP_API_KEY)' ./"${PKGNAME}"
+	SELF_IP_API_KEY='$(SELF_IP_API_KEY)' SELF_IP_ENABLE_PORT_CHECKER='True' SELF_IP_ENABLE_HOSTNAME='True' ./"${PKGNAME}"
 
 clean:
 	rm -f "${PKGNAME}"

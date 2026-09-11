@@ -73,7 +73,7 @@ func PublicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 		return
 	}
 
-	data := appData.Databases.GetGeoData(parsedQueryIP, mode, r.UserAgent())
+	data := appData.Databases.GetGeoData(parsedQueryIP, mode, r.UserAgent(), appData.Config.EnableHostName)
 	if data == nil {
 		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
 		return

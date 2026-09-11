@@ -75,13 +75,23 @@ func main() {
 		listenPort = p
 	}
 
+	if e, flag := os.LookupEnv("SELF_IP_ENABLE_HOSTNAME"); flag && e == "True" {
+		log.Println("Enabling hostnames in full mode.")
+		appData.Config.EnableHostName = true
+	}
+
 	publicMux := http.NewServeMux()
 	publicMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/", "/json", "/api":
 			h.PublicHandler(w, r, &appData)
 		case "/portcheck":
-			h.PortHandler(w, r, &appData)
+			if enabled, flag := os.LookupEnv("SELF_IP_ENABLE_PORT_CHECKER"); flag && enabled == "True" {
+				log.Println("Enabling port checker.")
+				h.PortHandler(w, r, &appData)
+			} else {
+				http.Error(w, "404 Page Not Found: Port Checked Disabled", http.StatusNotFound)
+			}
 		default:
 			http.Error(w, "404 Page Not Found", http.StatusNotFound)
 		}

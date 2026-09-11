@@ -103,7 +103,7 @@ func calcIPDecimal(ip netip.Addr) *JSONBigInt {
 	}
 }
 
-func getGeoData(ip netip.Addr, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, mode Mode, uAgent string) []byte {
+func getGeoData(ip netip.Addr, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, mode Mode, uAgent string, enableHostName bool) []byte {
 	// IP Only mode doesn't reach here
 	getAgent := func(uAgent string) userAgent {
 		uAgentParts := strings.SplitN(uAgent, " ", 2)
@@ -155,10 +155,12 @@ func getGeoData(ip netip.Addr, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader
 		record.ASN = asn
 		record.UserAgent = getAgent(uAgent)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		if names, err := net.DefaultResolver.LookupAddr(ctx, ip.String()); err == nil && len(names) > 0 {
-			record.HostName = strings.TrimRight(names[0], ".")
+		if enableHostName {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			if names, err := net.DefaultResolver.LookupAddr(ctx, ip.String()); err == nil && len(names) > 0 {
+				record.HostName = strings.TrimRight(names[0], ".")
+			}
 		}
 		record.IPDecimal = calcIPDecimal(ip)
 		if record.Country.ISOCode != "" {

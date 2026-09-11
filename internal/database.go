@@ -37,10 +37,10 @@ func (d *DatabaseStore) Healthy() bool {
 	return true
 }
 
-func (d *DatabaseStore) GetGeoData(ip netip.Addr, mode Mode, userAgent string) []byte {
+func (d *DatabaseStore) GetGeoData(ip netip.Addr, mode Mode, userAgent string, enableHostName bool) []byte {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
-	return getGeoData(ip, d.dbCity, d.dbASN, mode, userAgent)
+	return getGeoData(ip, d.dbCity, d.dbASN, mode, userAgent, enableHostName)
 }
 
 func (d *DatabaseStore) Close() {

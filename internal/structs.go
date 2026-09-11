@@ -19,8 +19,11 @@ const (
 type AppData struct {
 	ApiKey    string
 	Databases *DatabaseStore
-	Proxies   []netip.Prefix
-	OwnIP     []netip.Addr
+	Config    struct {
+		EnableHostName bool
+	}
+	Proxies []netip.Prefix
+	OwnIP   []netip.Addr
 }
 
 type names struct {
