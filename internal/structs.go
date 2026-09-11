@@ -85,8 +85,8 @@ type fullResponse struct {
 	IPDecimal         *JSONBigInt   `json:"ip_decimal"`
 	HostName          string        `json:"hostname,omitempty"`
 	City              city          `maxminddb:"city" json:"city,omitempty"`
-	Continent         continent     `maxminddb:"continent" json:"continent,omitempty"`
 	Country           country       `maxminddb:"country" json:"country,omitempty"`
+	Continent         continent     `maxminddb:"continent" json:"continent,omitempty"`
 	Location          location      `maxminddb:"location" json:"location,omitempty"`
 	Postal            postal        `maxminddb:"postal" json:"postal,omitempty"`
 	RegisteredCountry country       `maxminddb:"registered_country" json:"registered_country,omitempty"`

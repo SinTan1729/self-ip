@@ -132,6 +132,12 @@ func getGeoData(ip netip.Addr, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader
 		wg      sync.WaitGroup
 	)
 
+	jsonDispatch := func(data any) []byte {
+		jsonData, err := json.Marshal(data)
+		Check(err)
+		return jsonData
+	}
+
 	if mode == Full {
 		var record fullResponse
 		wg.Add(2)
@@ -149,8 +155,9 @@ func getGeoData(ip netip.Addr, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader
 		record.ASN = asn
 		record.UserAgent = getAgent(uAgent)
 
-		names, err := net.LookupAddr(ip.String())
-		if err == nil && len(names) > 0 {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if names, err := net.DefaultResolver.LookupAddr(ctx, ip.String()); err == nil && len(names) > 0 {
 			record.HostName = strings.TrimRight(names[0], ".")
 		}
 		record.IPDecimal = calcIPDecimal(ip)
@@ -159,9 +166,7 @@ func getGeoData(ip netip.Addr, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader
 			record.Country.InEU = &eu
 		}
 
-		jsonData, err := json.Marshal(record)
-		Check(err)
-		return jsonData
+		return jsonDispatch(record)
 	}
 
 	var record intermediateData
@@ -192,9 +197,7 @@ func getGeoData(ip netip.Addr, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader
 		res.Country = record.Country.Names.EN
 		res.TimeZone = record.Location.TimeZone
 
-		jsonData, err := json.Marshal(res)
-		Check(err)
-		return jsonData
+		return jsonDispatch(res)
 	}
 
 	if mode == EchoIP {
@@ -226,9 +229,7 @@ func getGeoData(ip netip.Addr, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader
 		agent := getAgent(uAgent)
 		res.UserAgent = &agent
 
-		jsonData, err := json.Marshal(res)
-		Check(err)
-		return jsonData
+		return jsonDispatch(res)
 	}
 
 	// Default mode
@@ -261,9 +262,7 @@ func getGeoData(ip netip.Addr, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader
 			record.ASN.AutonomousSystemOrganization)
 	}
 
-	jsonData, err := json.Marshal(res)
-	Check(err)
-	return jsonData
+	return jsonDispatch(res)
 }
 
 func CheckAuth(key string, provided string) bool {
