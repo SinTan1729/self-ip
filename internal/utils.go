@@ -285,6 +285,8 @@ func LogText(clientIP string, mode Mode, queryIP string, attemptType uint) strin
 		modeText = ", mode: Full"
 	case IPOnly:
 		modeText = ", mode: IP only"
+	case Short:
+		modeText = ", mode: Short"
 	case EchoIP:
 		modeText = ", mode: echoip"
 	case PortCheck:
