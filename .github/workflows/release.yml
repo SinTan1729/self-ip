@@ -10,7 +10,7 @@ on:
       - "**/*.go"
       - "go.mod"
       - "go.sum"
-      - ".github/workflows/**"
+      - ".github/workflows/release.yml"
       - "deploy/Containerfile"
   workflow_dispatch:
 

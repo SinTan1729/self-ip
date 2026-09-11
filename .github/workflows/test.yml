@@ -1,0 +1,32 @@
+name: Go Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Create env
+        run: |
+          cat > .env <<'EOF'
+          API_KEY=dummy_api_key_for_testing
+          SELF_IP_API_KEY=$$argon2id$$v=19$$m=16,t=2,p=1$$ZHNkZHJxd2U$$k5/crDMWiPG24mRfH6eVhg
+          EOF
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - run: go test ./handlers
