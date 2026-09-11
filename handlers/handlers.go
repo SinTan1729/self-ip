@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"encoding/json"
@@ -18,7 +18,7 @@ import (
 	i "github.com/SinTan1729/self-ip/internal"
 )
 
-func basicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
+func PublicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	url, err := url.Parse(r.RequestURI)
 	i.Check(err)
 	clientIP, queryIP := i.GetClientIP(url, r, appData.Proxies)
@@ -32,7 +32,7 @@ func basicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		fmt.Fprintf(w, clientIP)
+		fmt.Fprint(w, clientIP)
 		log.Println(i.LogText(clientIP, i.IPOnly, clientIP, i.GoodAttempt))
 		return
 	}
@@ -88,7 +88,7 @@ func basicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	fmt.Fprintf(w, "%s", data)
 }
 
-func portHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
+func PortHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	mode := i.PortCheck
 	url, err := url.Parse(r.RequestURI)
 	if err != nil {
@@ -164,14 +164,14 @@ func portHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	}
 
 	log.Println(i.LogText(clientIP, mode, logAddress, i.GoodAttempt))
-	fmt.Fprintf(w, string(jsonData))
+	fmt.Fprint(w, string(jsonData))
 }
 
-func healthHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
+func HealthHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	if appData.Databases.Healthy() {
-		fmt.Fprintf(w, "healthy")
+		fmt.Fprint(w, "healthy")
 	} else {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "unhealthy")
+		fmt.Fprint(w, "unhealthy")
 	}
 }

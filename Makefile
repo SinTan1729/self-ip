@@ -5,10 +5,13 @@ include .env
 build:
 	go build -o ${PKGNAME}
 
-run: build 
+test:
+	go test ./handlers
+
+run: build
 	SELF_IP_API_KEY='$(SELF_IP_API_KEY)' ./"${PKGNAME}"
 
 clean:
 	rm -f "${PKGNAME}"
 
-.PHONY: build run clean
+.PHONY: build run clean test

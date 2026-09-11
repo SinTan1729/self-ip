@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	h "github.com/SinTan1729/self-ip/handlers"
 	i "github.com/SinTan1729/self-ip/internal"
 )
 
@@ -78,9 +79,9 @@ func main() {
 	publicMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/", "/json", "/api":
-			basicHandler(w, r, &appData)
+			h.PublicHandler(w, r, &appData)
 		case "/portcheck":
-			portHandler(w, r, &appData)
+			h.PortHandler(w, r, &appData)
 		default:
 			http.Error(w, "404 Page Not Found", http.StatusNotFound)
 		}
@@ -93,7 +94,7 @@ func main() {
 
 	healthMux := http.NewServeMux()
 	healthMux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		healthHandler(w, r, &appData)
+		h.HealthHandler(w, r, &appData)
 	})
 	health := &http.Server{
 		Addr:    "127.0.0.1:1729",
