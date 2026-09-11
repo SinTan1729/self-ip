@@ -58,13 +58,9 @@ func main() {
 
 	appData := i.AppData{
 		Databases: databases,
-		ApiKey:    apiKey,
 		Proxies:   trustedProxies,
 	}
-	if ownIPs := i.GetOwnIPs(); ownIPs != nil {
-		log.Println("Resolved own IP(s):", i.PrettyPrintArray(ownIPs))
-		appData.OwnIP = ownIPs
-	}
+	appData.Config.ApiKey = apiKey
 
 	var listenAddr string
 	listenPort := "3213"
@@ -80,18 +76,22 @@ func main() {
 		appData.Config.EnableHostName = true
 	}
 
+	if e, flag := os.LookupEnv("SELF_IP_ENABLE_PORT_CHECKER"); flag && e == "True" {
+		log.Println("Enabling port checker.")
+		appData.Config.EnablePortChecker = true
+		if ownIPs := i.GetOwnIPs(); ownIPs != nil {
+			log.Println("Resolved own IP(s):", i.PrettyPrintArray(ownIPs))
+			appData.OwnIP = ownIPs
+		}
+	}
+
 	publicMux := http.NewServeMux()
 	publicMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/", "/json", "/api":
 			h.PublicHandler(w, r, &appData)
 		case "/portcheck":
-			if enabled, flag := os.LookupEnv("SELF_IP_ENABLE_PORT_CHECKER"); flag && enabled == "True" {
-				log.Println("Enabling port checker.")
-				h.PortHandler(w, r, &appData)
-			} else {
-				http.Error(w, "404 Page Not Found: Port Checked Disabled", http.StatusNotFound)
-			}
+			h.PortHandler(w, r, &appData)
 		default:
 			http.Error(w, "404 Page Not Found", http.StatusNotFound)
 		}

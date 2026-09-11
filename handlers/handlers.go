@@ -26,7 +26,7 @@ func PublicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	modeStr := url.Query().Get("mode")
 	// Short circuit for IP Only mode
 	if modeStr == "ip_only" {
-		if !i.CheckAuth(appData.ApiKey, r.Header.Get("X-API-Key")) {
+		if !i.CheckAuth(appData.Config.ApiKey, r.Header.Get("X-API-Key")) {
 			log.Println(i.LogText(clientIP, i.IPOnly, queryIP, i.Unauthorized))
 			w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
@@ -66,7 +66,7 @@ func PublicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 		return
 	}
 
-	if !i.CheckAuth(appData.ApiKey, r.Header.Get("X-API-Key")) {
+	if !i.CheckAuth(appData.Config.ApiKey, r.Header.Get("X-API-Key")) {
 		log.Println(i.LogText(clientIP, mode, queryIP, i.Unauthorized))
 		w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
 		http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
@@ -123,7 +123,7 @@ func PortHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 		logAddress = fmt.Sprintf(":%d", port)
 	}
 
-	if !i.CheckAuth(appData.ApiKey, r.Header.Get("X-API-Key")) {
+	if !i.CheckAuth(appData.Config.ApiKey, r.Header.Get("X-API-Key")) {
 		log.Println(i.LogText(clientIP, mode, logAddress, i.Unauthorized))
 		w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
 		http.Error(w, "401 Unauthorized", http.StatusUnauthorized)

@@ -17,10 +17,11 @@ const (
 )
 
 type AppData struct {
-	ApiKey    string
 	Databases *DatabaseStore
 	Config    struct {
-		EnableHostName bool
+		ApiKey            string
+		EnableHostName    bool
+		EnablePortChecker bool
 	}
 	Proxies []netip.Prefix
 	OwnIP   []netip.Addr
