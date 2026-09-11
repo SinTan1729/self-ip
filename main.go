@@ -28,6 +28,13 @@ func basicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 		log.Fatal(err)
 	}
 	clientIP, queryIP := i.GetClientIP(url, r, appData.Proxies)
+	var parsedQueryIP netip.Addr
+	badIP := false
+	if ip, err := netip.ParseAddr(queryIP); err != nil {
+		badIP = true
+	} else {
+		parsedQueryIP = ip
+	}
 
 	var mode i.Mode
 	switch url.Query().Get("mode") {
@@ -46,6 +53,11 @@ func basicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 		http.Error(w, "400 Bad Request", http.StatusBadRequest)
 		return
 	}
+	if badIP {
+		log.Println(i.LogText(clientIP, mode, queryIP, i.BadAttempt))
+		http.Error(w, "400 Bad Request", http.StatusBadRequest)
+		return
+	}
 
 	if !i.CheckAuth(appData.ApiKey, r.Header.Get("X-API-Key")) {
 		log.Println(i.LogText(clientIP, mode, queryIP, i.Unauthorized))
@@ -54,7 +66,7 @@ func basicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 		return
 	}
 
-	data := appData.Databases.GetGeoData(queryIP, mode, r.UserAgent())
+	data := appData.Databases.GetGeoData(parsedQueryIP, mode, r.UserAgent())
 	if data == nil {
 		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
 		return
@@ -86,7 +98,12 @@ func portHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 		badRequest = "Bad port"
 	}
 
-	ip := netip.MustParseAddr(queryIP).Unmap()
+	var ip netip.Addr
+	if tIP, err := netip.ParseAddr(queryIP); err == nil {
+		ip = tIP
+	} else {
+		badRequest = "Bad Provided IP"
+	}
 	if !ip.IsGlobalUnicast() || slices.Contains(appData.OwnIP, ip) || ip.IsLoopback() || ip.IsPrivate() ||
 		ip.IsLinkLocalUnicast() || ip.IsMulticast() || ip.IsUnspecified() {
 		log.Println("Blocked IP was requested:", ip)
@@ -114,7 +131,7 @@ func portHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	conn, err := net.DialTimeout("tcp", address, 2*time.Second)
 
 	var res i.PortResponse
-	res.IP = queryIP
+	res.IP = ip
 	res.Port = uint16(port)
 
 	if err != nil {

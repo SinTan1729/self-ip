@@ -46,6 +46,7 @@ type country struct {
 	GeoNameID uint64 `maxminddb:"geoname_id" json:"geoname_id,omitempty"`
 	ISOCode   string `maxminddb:"iso_code" json:"iso_code,omitempty"`
 	Names     names  `maxminddb:"names" json:"names,omitempty"`
+	InEU      *bool  `json:"in_eu,omitempty"`
 }
 type location struct {
 	AccuracyRadius uint64  `maxminddb:"accuracy_radius" json:"accuracy_radius,omitempty"`
@@ -80,7 +81,7 @@ func (n JSONBigInt) MarshalJSON() ([]byte, error) {
 }
 
 type fullResponse struct {
-	IP                string        `json:"ip"`
+	IP                netip.Addr    `json:"ip"`
 	IPDecimal         *JSONBigInt   `json:"ip_decimal"`
 	HostName          string        `json:"hostname,omitempty"`
 	City              city          `maxminddb:"city" json:"city,omitempty"`
@@ -94,6 +95,31 @@ type fullResponse struct {
 	UserAgent         userAgent     `json:"user_agent,omitempty"`
 }
 
+type intermediateData struct {
+	IP        netip.Addr
+	IPDecimal *JSONBigInt
+	City      struct {
+		Names struct {
+			EN string `maxminddb:"en"`
+		} `maxminddb:"names"`
+	} `maxminddb:"city"`
+	Country struct {
+		Names struct {
+			EN string `maxminddb:"en"`
+		} `maxminddb:"names"`
+		ISOCode string `maxminddb:"iso_code"`
+	} `maxminddb:"country"`
+	Location location `maxminddb:"location"`
+	Postal   postal   `maxminddb:"postal"`
+	Region   []struct {
+		Names struct {
+			EN string `maxminddb:"en"`
+		} `maxminddb:"names"`
+		ISOCode string `maxminddb:"iso_code"`
+	} `maxminddb:"subdivisions,maxsize:1"`
+	ASN asnResponse
+}
+
 type regionInfo struct {
 	Name    string `json:"name,omitempty"`
 	ISOCode string `json:"iso,omitempty"`
@@ -104,7 +130,7 @@ type locationInfo struct {
 	Postal    string  `json:"postal,omitempty"`
 }
 type defaultResponse struct {
-	IP           string        `json:"ip"`
+	IP           netip.Addr    `json:"ip"`
 	City         string        `json:"city,omitempty"`
 	Region       *regionInfo   `json:"region,omitempty"`
 	Country      *regionInfo   `json:"country,omitempty"`
@@ -114,7 +140,7 @@ type defaultResponse struct {
 }
 
 type echoIPResponse struct {
-	IP         string      `json:"ip"`
+	IP         netip.Addr  `json:"ip"`
 	IPDecimal  *JSONBigInt `json:"ip_decimal"`
 	Country    string      `json:"country,omitempty"`
 	CountryISO string      `json:"country_iso,omitempty"`
@@ -133,11 +159,11 @@ type echoIPResponse struct {
 }
 
 type shortResponse struct {
-	IP       string `json:"ip"`
-	City     string `json:"city,omitempty"`
-	Region   string `json:"region,omitempty"`
-	Country  string `json:"country,omitempty"`
-	TimeZone string `json:"tz,omitempty"`
+	IP       netip.Addr `json:"ip"`
+	City     string     `json:"city,omitempty"`
+	Region   string     `json:"region,omitempty"`
+	Country  string     `json:"country,omitempty"`
+	TimeZone string     `json:"tz,omitempty"`
 }
 
 type PortStatus string
@@ -151,7 +177,7 @@ const (
 )
 
 type PortResponse struct {
-	IP        string     `json:"ip"`
+	IP        netip.Addr `json:"ip"`
 	Port      uint16     `json:"port"`
 	Reachable bool       `json:"reachable"`
 	Status    PortStatus `json:"status"`

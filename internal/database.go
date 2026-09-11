@@ -11,6 +11,7 @@ import (
 	"log"
 	"math/rand/v2"
 	"net/http"
+	"net/netip"
 	"os"
 	"strings"
 	"sync"
@@ -36,10 +37,10 @@ func (d *DatabaseStore) Healthy() bool {
 	return true
 }
 
-func (d *DatabaseStore) GetGeoData(rawIP string, mode Mode, userAgent string) []byte {
+func (d *DatabaseStore) GetGeoData(ip netip.Addr, mode Mode, userAgent string) []byte {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
-	return getGeoData(rawIP, d.dbCity, d.dbASN, mode, userAgent)
+	return getGeoData(ip, d.dbCity, d.dbASN, mode, userAgent)
 }
 
 func (d *DatabaseStore) Close() {

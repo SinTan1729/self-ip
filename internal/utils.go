@@ -92,30 +92,82 @@ func GetClientIP(url *url.URL, r *http.Request, trustedProxies []netip.Prefix) (
 	return clientIP, queryIP
 }
 
-func calcIPDecimal(rawIP string) *JSONBigInt {
-	ip := net.ParseIP(rawIP)
+func calcIPDecimal(ip netip.Addr) *JSONBigInt {
 	bigInt := big.NewInt(0)
-	if v4 := ip.To4(); v4 != nil {
-		return (*JSONBigInt)(bigInt.SetBytes(v4))
+	if ip.Is4() {
+		b := ip.As4()
+		return (*JSONBigInt)(bigInt.SetBytes(b[:]))
 	} else {
-		return (*JSONBigInt)(bigInt.SetBytes(ip.To16()))
+		b := ip.As16()
+		return (*JSONBigInt)(bigInt.SetBytes(b[:]))
 	}
 }
 
-func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, mode Mode, uAgent string) []byte {
-	ip, err := netip.ParseAddr(rawIP)
-	if err != nil {
-		log.Panicln("Error getting IP:", err)
-		return nil
+func getGeoData(ip netip.Addr, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader, mode Mode, uAgent string) []byte {
+	if mode == IPOnly {
+		return []byte(ip.String())
+	}
+
+	getAgent := func(uAgent string) userAgent {
+		uAgentParts := strings.SplitN(uAgent, " ", 2)
+		var uAgentComment string
+		if len(uAgentParts) > 1 {
+			uAgentComment = uAgentParts[1]
+		}
+		uAgentMainParts := strings.SplitN(uAgentParts[0], "/", 2)
+		var uAgentVersion string
+		if len(uAgentMainParts) > 1 {
+			uAgentVersion = uAgentMainParts[1]
+		}
+
+		return userAgent{
+			Product:  uAgentMainParts[0],
+			Version:  uAgentVersion,
+			Comment:  uAgentComment,
+			RawValue: uAgent,
+		}
 	}
 
 	var (
-		record  fullResponse
 		asn     asnResponse
 		cityErr error
 		asnErr  error
 		wg      sync.WaitGroup
 	)
+
+	if mode == Full {
+		var record fullResponse
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			cityErr = dbCity.Lookup(ip).Decode(&record)
+		}()
+		go func() {
+			defer wg.Done()
+			asnErr = dbASN.Lookup(ip).Decode(&asn)
+		}()
+		wg.Wait()
+
+		record.IP = ip
+		record.ASN = asn
+		record.UserAgent = getAgent(uAgent)
+
+		names, err := net.LookupAddr(ip.String())
+		if err == nil && len(names) > 0 {
+			record.HostName = strings.TrimRight(names[0], ".")
+		}
+		record.IPDecimal = calcIPDecimal(ip)
+		if record.Country.ISOCode != "" {
+			eu := slices.Contains(EUCountries, record.Country.ISOCode)
+			record.Country.InEU = &eu
+		}
+
+		jsonData, err := json.Marshal(record)
+		Check(err)
+		return jsonData
+	}
+
+	var record intermediateData
 
 	wg.Add(2)
 	go func() {
@@ -126,40 +178,19 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 		defer wg.Done()
 		asnErr = dbASN.Lookup(ip).Decode(&asn)
 	}()
-
 	wg.Wait()
+
 	if cityErr != nil || asnErr != nil {
 		return nil
 	}
-	record.IP = rawIP
 	record.ASN = asn
-	uAgentParts := strings.SplitN(uAgent, " ", 2)
-	var uAgentComment string
-	if len(uAgentParts) > 1 {
-		uAgentComment = uAgentParts[1]
-	}
-	uAgentMainParts := strings.SplitN(uAgentParts[0], "/", 2)
-	var uAgentVersion string
-	if len(uAgentMainParts) > 1 {
-		uAgentVersion = uAgentMainParts[1]
-	}
-	record.UserAgent = userAgent{
-		Product:  uAgentMainParts[0],
-		Version:  uAgentVersion,
-		Comment:  uAgentComment,
-		RawValue: uAgent,
-	}
 
-	switch mode {
-	case IPOnly:
-		return []byte(rawIP)
-
-	case Short:
+	if mode == Short {
 		var res shortResponse
-		res.IP = rawIP
+		res.IP = ip
 		res.City = record.City.Names.EN
-		if len(record.Subdivisions) > 0 {
-			res.Region = record.Subdivisions[0].Names.EN
+		if len(record.Region) > 0 {
+			res.Region = record.Region[0].Names.EN
 		}
 		res.Country = record.Country.Names.EN
 		res.TimeZone = record.Location.TimeZone
@@ -167,54 +198,21 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 		jsonData, err := json.Marshal(res)
 		Check(err)
 		return jsonData
+	}
 
-	case Default:
-		var res defaultResponse
-		res.IP = rawIP
-		res.City = record.City.Names.EN
-		if len(record.Subdivisions) > 0 {
-			res.Region = &regionInfo{
-				Name:    record.Subdivisions[0].Names.EN,
-				ISOCode: record.Subdivisions[0].ISOCode,
-			}
-		}
-		if record.Country.Names.EN != "" {
-			res.Country = &regionInfo{
-				Name:    record.Country.Names.EN,
-				ISOCode: record.Country.ISOCode,
-			}
-		}
-		if record.Location.AccuracyRadius != 0 {
-			res.Location = &locationInfo{
-				Latitude:  record.Location.Latitude,
-				Longitude: record.Location.Longitude,
-				Postal:    record.Postal.Code,
-			}
-		}
-		res.TimeZone = record.Location.TimeZone
-		if record.ASN.AutonomousSystemNumber > 0 {
-			res.Organization = fmt.Sprintf("A%d %s",
-				record.ASN.AutonomousSystemNumber,
-				record.ASN.AutonomousSystemOrganization)
-		}
-
-		jsonData, err := json.Marshal(res)
-		Check(err)
-		return jsonData
-
-	case EchoIP:
+	if mode == EchoIP {
 		var res echoIPResponse
-		res.IP = rawIP
-		res.IPDecimal = calcIPDecimal(rawIP)
+		res.IP = ip
+		res.IPDecimal = calcIPDecimal(ip)
 		res.Country = record.Country.Names.EN
 		res.CountryISO = record.Country.ISOCode
 		if res.CountryISO != "" {
 			eu := slices.Contains(EUCountries, res.CountryISO)
 			res.CountryEU = &eu
 		}
-		if len(record.Subdivisions) > 0 {
-			res.RegionName = record.Subdivisions[0].Names.EN
-			res.RegionCode = record.Subdivisions[0].ISOCode
+		if len(record.Region) > 0 {
+			res.RegionName = record.Region[0].Names.EN
+			res.RegionCode = record.Region[0].ISOCode
 		}
 		res.MetroCode = record.Location.MetroCode
 		res.City = record.City.Names.EN
@@ -228,23 +226,47 @@ func getGeoData(rawIP string, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader,
 			res.ASN = fmt.Sprintf("A%d", record.ASN.AutonomousSystemNumber)
 			res.ASNOrg = record.ASN.AutonomousSystemOrganization
 		}
-		res.UserAgent = &record.UserAgent
+		agent := getAgent(uAgent)
+		res.UserAgent = &agent
 
 		jsonData, err := json.Marshal(res)
 		Check(err)
 		return jsonData
-
-	default: // mode = Full
-		names, err := net.LookupAddr(rawIP)
-		if err == nil && len(names) > 0 {
-			record.HostName = strings.TrimRight(names[0], ".")
-		}
-		record.IPDecimal = calcIPDecimal(rawIP)
-
-		jsonData, err := json.Marshal(record)
-		Check(err)
-		return jsonData
 	}
+
+	// Default mode
+	var res defaultResponse
+	res.IP = ip
+	res.City = record.City.Names.EN
+	if len(record.Region) > 0 {
+		res.Region = &regionInfo{
+			Name:    record.Region[0].Names.EN,
+			ISOCode: record.Region[0].ISOCode,
+		}
+	}
+	if record.Country.Names.EN != "" {
+		res.Country = &regionInfo{
+			Name:    record.Country.Names.EN,
+			ISOCode: record.Country.ISOCode,
+		}
+	}
+	if record.Location.AccuracyRadius != 0 {
+		res.Location = &locationInfo{
+			Latitude:  record.Location.Latitude,
+			Longitude: record.Location.Longitude,
+			Postal:    record.Postal.Code,
+		}
+	}
+	res.TimeZone = record.Location.TimeZone
+	if record.ASN.AutonomousSystemNumber > 0 {
+		res.Organization = fmt.Sprintf("A%d %s",
+			record.ASN.AutonomousSystemNumber,
+			record.ASN.AutonomousSystemOrganization)
+	}
+
+	jsonData, err := json.Marshal(res)
+	Check(err)
+	return jsonData
 }
 
 func CheckAuth(key string, provided string) bool {
