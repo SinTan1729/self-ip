@@ -227,6 +227,17 @@ func GetDatabases() {
 			return fmt.Errorf("SHA-256 verification failed for %s", name)
 		}
 		log.Println("Verified SHA-256 for", name)
+
+		log.Println("Verifying database integrity for", name)
+		if db, err := maxminddb.Open(fmt.Sprintf("./maxmind-databases/%s.tmp", name)); err == nil {
+			err = db.Verify()
+			if err == nil {
+				log.Println("Integrity verification successful for database", name)
+			} else {
+				log.Println("Integrity verification failed for database", name)
+				return err
+			}
+		}
 		verified = true
 		return nil
 	}
