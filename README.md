@@ -27,7 +27,7 @@ IP subnet, so that `self-ip` gets the correct client IP.**
 
 On startup, the server checks the latest release of the
 [P3TERX/GeoLite.mmdb](https://github.com/P3TERX/GeoLite.mmdb) repository.
-Then, they're checked once a day around 7am. When found, new releases
+Then, they're checked once a day around 7am UTC. When found, new releases
 of the databases are automatically downloaded.
 
 ## Deployment
@@ -138,7 +138,7 @@ Return only the queried IP address. It disregards the provided `ip` query string
 ```bash
 curl \
   -H "X-API-Key: your-secret-api-key" \
-  "http://localhost:3213?ip=8.8.8.8&mode=ip_only"
+  "http://localhost:3213?mode=ip_only"
 ```
 
 The response content type is `text/plain` e.g. `1.2.3.4`.
