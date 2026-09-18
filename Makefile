@@ -1,5 +1,5 @@
 PKGNAME := self-ip
-GIT_VERSION :=  $(shell git tag --list | tail -1)
+GIT_VERSION :=  $(shell git describe --tags --abbrev=0)
 include .env
 
 build:
