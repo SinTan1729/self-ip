@@ -74,6 +74,8 @@ func main() {
 	if e, flag := os.LookupEnv("SELF_IP_ENABLE_HOSTNAME"); flag && e == "True" {
 		log.Println("Enabling hostnames in full mode.")
 		appData.Config.EnableHostName = true
+	} else {
+		log.Println("Disabling hostnames in full mode.")
 	}
 
 	if e, flag := os.LookupEnv("SELF_IP_ENABLE_PORT_CHECKER"); flag && e == "True" {
@@ -83,6 +85,8 @@ func main() {
 			log.Println("Resolved own IP(s):", i.PrettyPrintArray(ownIPs))
 			appData.OwnIP = ownIPs
 		}
+	} else {
+		log.Println("Disabling port checker.")
 	}
 
 	publicMux := http.NewServeMux()

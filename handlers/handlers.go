@@ -106,15 +106,19 @@ func PortHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	}
 
 	var ip netip.Addr
-	if tIP, err := netip.ParseAddr(queryIP); err == nil {
-		ip = tIP
+	if !appData.Config.EnablePortChecker {
+		badRequest = "Port checker is disabled"
 	} else {
-		badRequest = "Bad Provided IP"
-	}
-	if !ip.IsGlobalUnicast() || slices.Contains(appData.OwnIP, ip) || ip.IsLoopback() || ip.IsPrivate() ||
-		ip.IsLinkLocalUnicast() || ip.IsMulticast() || ip.IsUnspecified() {
-		log.Println("Blocked IP was requested:", ip)
-		badRequest = "Blocked IP"
+		if tIP, err := netip.ParseAddr(queryIP); err == nil {
+			ip = tIP
+		} else {
+			badRequest = "Bad Provided IP"
+		}
+		if !ip.IsGlobalUnicast() || slices.Contains(appData.OwnIP, ip) || ip.IsLoopback() || ip.IsPrivate() ||
+			ip.IsLinkLocalUnicast() || ip.IsMulticast() || ip.IsUnspecified() {
+			log.Println("Blocked IP was requested:", ip)
+			badRequest = "Blocked IP"
+		}
 	}
 
 	address := fmt.Sprintf("[%s]:%d", queryIP, port)
@@ -130,7 +134,7 @@ func PortHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 		return
 	}
 	if badRequest != "" {
-		log.Println(i.LogText(clientIP, mode, queryIP, i.BadAttempt))
+		log.Println(i.LogText(clientIP, mode, logAddress, i.BadAttempt))
 		http.Error(w, "400 Bad Request: "+badRequest, http.StatusBadRequest)
 		return
 	}
