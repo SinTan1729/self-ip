@@ -155,6 +155,7 @@ func GetDatabases() {
 		Name               string `json:"name"`
 		BrowserDownloadURL string `json:"browser_download_url"`
 		Digest             string `json:"digest"`
+		Size               uint   `json:"size"`
 	}
 	type Release struct {
 		TagName string  `json:"tag_name"`
@@ -205,7 +206,7 @@ func GetDatabases() {
 		}()
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
-		log.Println("Downloading", name)
+		log.Printf("Downloading %s (%.2f MiB)", name, (float32)(asset.Size)/(1024*1024))
 		if err := downloadFile(ctx, asset.BrowserDownloadURL, tmp); err != nil {
 			return err
 		}
@@ -224,17 +225,16 @@ func GetDatabases() {
 			return closeErr
 		}
 		if !bytes.Equal(h.Sum(nil), expectedBytes) {
-			return fmt.Errorf("SHA-256 verification failed for %s", name)
+			return fmt.Errorf("Failed to verify SHA-256 for %s", name)
 		}
 		log.Println("Verified SHA-256 for", name)
 
-		log.Println("Verifying database integrity for", name)
 		if db, err := maxminddb.Open(fmt.Sprintf("./maxmind-databases/%s.tmp", name)); err == nil {
 			err = db.Verify()
 			if err == nil {
-				log.Println("Integrity verification successful for database", name)
+				log.Println("Verified integrity for database", name)
 			} else {
-				log.Println("Integrity verification failed for database", name)
+				log.Println("Failed to verify integrity for database", name)
 				return err
 			}
 		}
