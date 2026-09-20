@@ -39,17 +39,17 @@ type names struct {
 }
 type city struct {
 	GeoNameID uint64 `maxminddb:"geoname_id" json:"geoname_id,omitempty"`
-	Names     names  `maxminddb:"names" json:"names,omitempty"`
+	Names     names  `maxminddb:"names" json:"names"`
 }
 type continent struct {
 	Code      string `maxminddb:"code" json:"code,omitempty"`
 	GeoNameID uint64 `maxminddb:"geoname_id" json:"geoname_id,omitempty"`
-	Names     names  `maxminddb:"names" json:"names,omitempty"`
+	Names     names  `maxminddb:"names" json:"names"`
 }
 type country struct {
 	GeoNameID uint64 `maxminddb:"geoname_id" json:"geoname_id,omitempty"`
 	ISOCode   string `maxminddb:"iso_code" json:"iso_code,omitempty"`
-	Names     names  `maxminddb:"names" json:"names,omitempty"`
+	Names     names  `maxminddb:"names" json:"names"`
 	InEU      *bool  `json:"in_eu,omitempty"`
 }
 type location struct {
@@ -65,7 +65,7 @@ type postal struct {
 type subdivision struct {
 	GeoNameID uint64 `maxminddb:"geoname_id" json:"geoname_id,omitempty"`
 	ISOCode   string `maxminddb:"iso_code" json:"iso_code,omitempty"`
-	Names     names  `maxminddb:"names" json:"names,omitempty"`
+	Names     names  `maxminddb:"names" json:"names"`
 }
 type asnResponse struct {
 	AutonomousSystemNumber       uint64 `maxminddb:"autonomous_system_number" json:"number,omitempty"`
@@ -88,15 +88,15 @@ type fullResponse struct {
 	IP                netip.Addr    `json:"ip"`
 	IPDecimal         *JSONBigInt   `json:"ip_decimal"`
 	HostName          string        `json:"hostname,omitempty"`
-	City              city          `maxminddb:"city" json:"city,omitempty"`
-	Country           country       `maxminddb:"country" json:"country,omitempty"`
-	Continent         continent     `maxminddb:"continent" json:"continent,omitempty"`
-	Location          location      `maxminddb:"location" json:"location,omitempty"`
-	Postal            postal        `maxminddb:"postal" json:"postal,omitempty"`
-	RegisteredCountry country       `maxminddb:"registered_country" json:"registered_country,omitempty"`
+	City              city          `maxminddb:"city" json:"city"`
+	Country           country       `maxminddb:"country" json:"country"`
+	Continent         continent     `maxminddb:"continent" json:"continent"`
+	Location          location      `maxminddb:"location" json:"location"`
+	Postal            postal        `maxminddb:"postal" json:"postal"`
+	RegisteredCountry country       `maxminddb:"registered_country" json:"registered_country"`
 	Subdivisions      []subdivision `maxminddb:"subdivisions" json:"subdivisions,omitempty"`
-	ASN               asnResponse   `json:"asn,omitempty"`
-	UserAgent         userAgent     `json:"user_agent,omitempty"`
+	ASN               asnResponse   `json:"asn"`
+	UserAgent         userAgent     `json:"user_agent"`
 }
 
 type intermediateData struct {
