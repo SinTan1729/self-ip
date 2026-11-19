@@ -12,6 +12,7 @@ import (
 	"os"
 	"slices"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -24,6 +25,7 @@ func PublicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	clientIP, queryIP := i.GetClientIP(url, r, appData.Proxies)
 
 	modeStr := url.Query().Get("mode")
+	modeStr = strings.TrimSuffix(modeStr, "/json")
 	// Short circuit for IP Only mode
 	if modeStr == "ip_only" {
 		if !i.CheckAuth(appData.Config.ApiKey, appData.Config.ApiKeyHashAlg, r.Header.Get("X-API-Key"), url.Query().Get("api_key")) {
@@ -99,6 +101,7 @@ func PortHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	var badRequest string
 	port := 443 // Default to https port
 	providedPort := r.URL.Query().Get("port")
+	providedPort = strings.TrimSuffix(providedPort, "/json")
 	if p, err := strconv.Atoi(providedPort); err == nil && p > 0 && p < 65536 {
 		port = p
 	} else if providedPort != "" {
