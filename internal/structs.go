@@ -20,6 +20,7 @@ type AppData struct {
 	Databases *DatabaseStore
 	Config    struct {
 		ApiKey            string
+		ApiKeyHashAlg     string
 		EnableHostName    bool
 		EnablePortChecker bool
 	}

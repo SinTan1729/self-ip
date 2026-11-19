@@ -2,6 +2,8 @@ package internal
 
 import (
 	"context"
+	"crypto/sha512"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -267,7 +269,7 @@ func getGeoData(ip netip.Addr, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader
 	return jsonDispatch(res)
 }
 
-func CheckAuth(key string, header string, query string) bool {
+func CheckAuth(key string, alg string, header string, query string) bool {
 	// Do not accept both non-empty or both empty
 	if header != "" && query != "" {
 		return false
@@ -278,7 +280,15 @@ func CheckAuth(key string, header string, query string) bool {
 	} else {
 		provided = query
 	}
-	ok, err := argon2.VerifyEncoded([]byte(provided), []byte(key))
+	var ok bool
+	var err error
+	if alg == "SHA512" {
+		sum := sha512.Sum512([]byte(provided))
+		base64 := base64.RawURLEncoding.EncodeToString(sum[:])
+		ok = base64 == key
+	} else {
+		ok, err = argon2.VerifyEncoded([]byte(provided), []byte(key))
+	}
 	if err != nil {
 		return false
 	}

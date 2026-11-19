@@ -42,7 +42,7 @@ Example `docker compose` and `podman quadlet` files are provided in the
 
 | Variable name                 | Description                                                                                                                                                                                                                 |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SELF_IP_API_KEY`             | Argon2 encrypted API Key. (Mandatory)                                                                                                                                                                                       |
+| `SELF_IP_API_KEY`             | SHA512 or Argon2 encrypted API Key. (Mandatory)                                                                                                                                                                             |
 | `SELF_IP_TRUSTED_PROXIES`     | List of trusted proxy IPs/subnet. If the request comes from one of these, the proxy headers will be used to figure out the client's real IP. Useful when the server if behind a reverse proxy, which is highly recommended. |
 | `SELF_IP_LISTEN_ADDR`         | The address the server listens to. Defaults to empty i.e. all addresses.                                                                                                                                                    |
 | `SELF_IP_LISTEN_PORT`         | The port the server listens to. Defaults to `3213`.                                                                                                                                                                         |
@@ -57,12 +57,14 @@ a `.env` file with `SELF_IP_API_KEY` variable containing a valid `Argon2id` hash
 ## API
 
 All requests require the `X-API-Key` header. The API Key has to be
-[`Argon2id`](https://www.argon2.com) encrypted. Check the deployment
+`SHA512` or [`Argon2id`](https://www.argon2.com) encrypted. Check the deployment
 files for some notes. The following can be used to generate an API key.
 
 ```bash
 openssl rand -hex 32
 ```
+
+The `SHA512` is recommended over `Argon2`. Make sure that it's encoded using `base64-url` encoding.
 
 ### Basic request
 

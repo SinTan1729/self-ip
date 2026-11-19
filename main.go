@@ -42,6 +42,12 @@ func main() {
 	if !flag {
 		log.Fatal("No API key was provided.")
 	}
+	hashAlg, _ := os.LookupEnv("SELF_IP_API_KEY_HASH_ALGORITHM")
+	if hashAlg == "SHA512" {
+		log.Println("Using SHA512 for API key verification.")
+	} else {
+		log.Println("Using Argon2 for API key verification. SHA512 is recommended.")
+	}
 
 	var trustedProxies []netip.Prefix
 	go databases.ScheduleUpdates()
@@ -61,6 +67,7 @@ func main() {
 		Proxies:   trustedProxies,
 	}
 	appData.Config.ApiKey = apiKey
+	appData.Config.ApiKeyHashAlg = hashAlg
 
 	var listenAddr string
 	listenPort := "3213"
