@@ -1,5 +1,5 @@
-# Build stage
-FROM golang:alpine AS builder
+# Build stage always runs on linux/amd64
+FROM --platform=linux/amd64 golang:alpine AS builder
 
 WORKDIR /app
 
@@ -8,15 +8,15 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o self-ip .
+ARG TARGETARCH
 ARG GIT_VERSION=""
 
 RUN if [ -n "$GIT_VERSION" ]; then \
-      CGO_ENABLED=0 GOOS=linux go build \
+      CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build \
         -ldflags="-s -w -X main.Version=$GIT_VERSION" \
         -o self-ip; \
     else \
-      CGO_ENABLED=0 GOOS=linux go build \
+      CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build \
         -ldflags="-s -w" \
         -o self-ip; \
     fi

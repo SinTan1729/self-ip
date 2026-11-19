@@ -13,8 +13,8 @@ AutoUpdate=registry
 Volume=self-ip:/app/maxmind-databases
 # Environment variables
 # CHANGE IT BEFORE DEPLOYMENT, THIS IS GIBBERISH
-# Make sure that you replace $ with $$ before putting the digest here
-Environment=SELF_IP_API_KEY=$$argon2id$$v=19$$m=16,t=2,p=2$$c3F3ZGFkdsdedadaddasdadscaafhjasajsnjasbfjfas
+Environment=SELF_IP_API_KEY=YlhMtBSKiSDuu9PiEinQWWA5QcFmoe0Lmar1g2N0m9vwYZoh67XeTTzbl0eKL14FUEjqBJwnr5SUli25wxjuew
+Environment=SELF_IP_API_KEY_HASH_ALGORITHM=SHA512
 # Environment=SELF_IP_TRUSTED_PROXIES=10.89.0.0/24
 # Environment=SELF_IP_LISTEN_ADDR=0.0.0.0
 # Environment=SELF_IP_LISTEN_PORT=1122

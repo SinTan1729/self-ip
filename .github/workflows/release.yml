@@ -5,18 +5,20 @@ on:
     branches:
       - main
     tags:
-      - "*"
+      - '*'
     paths:
-      - "**/*.go"
-      - "go.mod"
-      - "go.sum"
-      - ".github/workflows/release.yml"
-      - "deploy/Containerfile"
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/release.yml'
+      - 'deploy/Containerfile'
   workflow_dispatch:
 
 permissions:
   contents: read
   packages: write
+  id-token: write
+  attestations: write
 
 jobs:
   docker:
@@ -38,6 +40,8 @@ jobs:
       - name: Generate Docker metadata
         id: meta
         uses: docker/metadata-action@v6
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
@@ -48,12 +52,20 @@ jobs:
             type=raw,value=dev,enable=${{ github.ref_type != 'tag' }}
 
       - name: Build and push
+        id: push
         uses: docker/build-push-action@v7
         with:
           context: .
+          platforms: linux/amd64,linux/arm64
           file: ./deploy/Containerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
           build-args: |
             GIT_VERSION=${{ github.ref_type == 'tag' && github.ref_name || '' }}
+      - name: Generate artifact attestation
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ github.repository }}
+          subject-digest: ${{ steps.push.outputs.digest }}
