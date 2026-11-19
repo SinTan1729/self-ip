@@ -104,10 +104,10 @@ func TestServer(t *testing.T) {
 
 	status, resp = getResp(t, client, "http://localhost:3213?ip=85.214.143.21&mode=echoip")
 	assert.Equal(t, resp["asn"], "A6724")
-	assert.Equal(t, resp["user_agent"].(map[string]interface{})["product"], "Mozilla")
+	assert.Equal(t, resp["user_agent"].(map[string]any)["product"], "Mozilla")
 
 	status, resp = getResp(t, client, "http://localhost:3213?ip=1.1.1.1&mode=full")
-	assert.Equal(t, resp["registered_country"].(map[string]interface{})["iso_code"], "AU")
+	assert.Equal(t, resp["registered_country"].(map[string]any)["iso_code"], "AU")
 	assert.Equal(t, resp["hostname"], "one.one.one.one")
 
 	status, resp = getResp(t, client, "http://localhost:3213/portcheck?ip=8.8.8.8&port=53")

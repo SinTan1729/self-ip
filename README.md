@@ -226,6 +226,7 @@ It returns information in the following format.
 | `ip`      | Optional IP address to look up. If omitted, the client's IP address is used. Ignored in `ip_only` mode. |
 | `mode`    | Response mode: default, `ip_only`, `echoip`, `short` or `full`.                                         |
 | `port`    | Optional port to probe. If ommitted, defaults to `443`. Only works in `/portcheck`.                     |
+| `api_key` | Alternative way to provide the API key.                                                                 |
 
 ## Authentication
 
@@ -234,6 +235,8 @@ Every request must include the configured API key:
 ```text
 X-API-Key: your-secret-api-key
 ```
+
+It can provided using either the `X-API-Key` header or the `api_key` query parameter, but not both.
 
 Requests without a valid key receive:
 

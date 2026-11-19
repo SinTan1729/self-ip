@@ -267,7 +267,17 @@ func getGeoData(ip netip.Addr, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader
 	return jsonDispatch(res)
 }
 
-func CheckAuth(key string, provided string) bool {
+func CheckAuth(key string, header string, query string) bool {
+	// Do not accept both non-empty or both empty
+	if header != "" && query != "" {
+		return false
+	}
+	var provided string
+	if header != "" {
+		provided = header
+	} else {
+		provided = query
+	}
 	ok, err := argon2.VerifyEncoded([]byte(provided), []byte(key))
 	if err != nil {
 		return false
@@ -322,7 +332,7 @@ func LogText(clientIP string, mode Mode, queryIP string, attemptType uint) strin
 
 func ParseTrustedProxies(value string) ([]netip.Prefix, error) {
 	var prefixes []netip.Prefix
-	for _, s := range strings.Split(value, ",") {
+	for s := range strings.SplitSeq(value, ",") {
 		s = strings.TrimSpace(s)
 		if s == "" {
 			continue
