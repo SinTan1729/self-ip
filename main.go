@@ -9,6 +9,7 @@ import (
 	"net/netip"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -43,10 +44,13 @@ func main() {
 		log.Fatal("No API key was provided.")
 	}
 	hashAlg, _ := os.LookupEnv("SELF_IP_API_KEY_HASH_ALGORITHM")
-	if hashAlg == "SHA512" {
+	switch hashAlg {
+	case "SHA512":
 		log.Println("Using SHA512 for API key verification.")
-	} else {
+	case "Argon2":
 		log.Println("Using Argon2 for API key verification. SHA512 is recommended.")
+	default:
+		log.Fatal("An algorithm needs to be provided. SHA512 is recommended.")
 	}
 
 	var trustedProxies []netip.Prefix
@@ -66,7 +70,13 @@ func main() {
 		Databases: databases,
 		Proxies:   trustedProxies,
 	}
-	appData.Config.ApiKey = apiKey
+	appData.Config.ApiKeys = make(map[string]struct{})
+	for key := range strings.SplitSeq(apiKey, ",") {
+		appData.Config.ApiKeys[key] = struct{}{}
+	}
+	if hashAlg == "Argon2" && len(appData.Config.ApiKeys) > 1 {
+		log.Fatal("Only one Argon2 API Key is supported at one time.")
+	}
 	appData.Config.ApiKeyHashAlg = hashAlg
 
 	var listenAddr string

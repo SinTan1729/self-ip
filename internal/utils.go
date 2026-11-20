@@ -269,9 +269,9 @@ func getGeoData(ip netip.Addr, dbCity *maxminddb.Reader, dbASN *maxminddb.Reader
 	return jsonDispatch(res)
 }
 
-func CheckAuth(key string, alg string, header string, query string) bool {
+func CheckAuth(keys map[string]struct{}, alg string, header string, query string) bool {
 	// Do not accept both non-empty or both empty
-	if header != "" && query != "" {
+	if (header != "") == (query != "") {
 		return false
 	}
 	var provided string
@@ -280,19 +280,24 @@ func CheckAuth(key string, alg string, header string, query string) bool {
 	} else {
 		provided = query
 	}
-	var ok bool
-	var err error
-	if alg == "SHA512" {
+	switch alg {
+	case "SHA512":
 		sum := sha512.Sum512([]byte(provided))
 		base64 := base64.RawURLEncoding.EncodeToString(sum[:])
-		ok = base64 == key
-	} else {
-		ok, err = argon2.VerifyEncoded([]byte(provided), []byte(key))
-	}
-	if err != nil {
+		_, ok := keys[base64]
+		return ok
+	case "Argon2":
+		// Argon2 always has only one key
+		var key string
+		for k := range keys {
+			key = k
+			break
+		}
+		ok, err := argon2.VerifyEncoded([]byte(provided), []byte(key))
+		return err == nil && ok
+	default:
 		return false
 	}
-	return ok
 }
 
 func (writer LogWriter) Write(bytes []byte) (int, error) {

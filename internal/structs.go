@@ -19,7 +19,7 @@ const (
 type AppData struct {
 	Databases *DatabaseStore
 	Config    struct {
-		ApiKey            string
+		ApiKeys           map[string]struct{}
 		ApiKeyHashAlg     string
 		EnableHostName    bool
 		EnablePortChecker bool
