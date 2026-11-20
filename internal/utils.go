@@ -71,7 +71,6 @@ func isTrustedProxy(rawIP string, prefixes []netip.Prefix) bool {
 
 func GetClientIP(url *url.URL, r *http.Request, trustedProxies []netip.Prefix) (string, string) {
 	customIP := url.Query().Get("ip")
-	customIP = strings.TrimSuffix(customIP, "/json")
 	var queryIP string
 	var clientIP string
 	if ip, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
@@ -281,7 +280,6 @@ func CheckAuth(key string, alg string, header string, query string) bool {
 	} else {
 		provided = query
 	}
-	provided = strings.TrimSuffix(provided, "/json")
 	var ok bool
 	var err error
 	if alg == "SHA512" {
