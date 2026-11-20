@@ -62,10 +62,17 @@ All requests require the `X-API-Key` header. The API Key has to be
 files for some notes. The following can be used to generate an API key.
 
 ```bash
-openssl rand -hex 32
+tr -dc 'a-z0-9_-' < /dev/urandom | head -c 86
 ```
 
 The `SHA512` is recommended over `Argon2`. Make sure that it's encoded using `base64-url` encoding.
+
+```bash
+# For Argon2
+echo -n "$API_KEY" | argon2 "$(openssl rand -hex 32)" -id -t 3 -m 16 -l 32 -e
+# For SHA512
+echo -n "$API_KEY" | openssl dgst -sha512 -binary | base64 -w 0 | tr '+/' '-_' | tr -d '='
+```
 
 ### Basic request
 
