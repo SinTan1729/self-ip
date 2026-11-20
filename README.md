@@ -42,7 +42,7 @@ Example `docker compose` and `podman quadlet` files are provided in the
 
 | Variable name                    | Description                                                                                                                                                                                                                 |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SELF_IP_API_KEY`                | SHA512 or Argon2 encrypted API Key. (Mandatory)                                                                                                                                                                             |
+| `SELF_IP_API_KEY`                | `SHA512` or `Argon2` encrypted API Key. (Mandatory) It can be a comma separated array of multiple keys if SHA512 is used.                                                                                                   |
 | `SELF_IP_API_KEY_HASH_ALGORITHM` | `SHA512` or `Argon2`, defaults to `Argon2`. (Mandatory)                                                                                                                                                                     |
 | `SELF_IP_TRUSTED_PROXIES`        | List of trusted proxy IPs/subnet. If the request comes from one of these, the proxy headers will be used to figure out the client's real IP. Useful when the server if behind a reverse proxy, which is highly recommended. |
 | `SELF_IP_LISTEN_ADDR`            | The address the server listens to. Defaults to empty i.e. all addresses.                                                                                                                                                    |
@@ -240,7 +240,7 @@ It returns information in the following format.
 
 ## Authentication
 
-Every request must include the configured API key:
+Every request must include a configured API key:
 
 ```text
 X-API-Key: your-secret-api-key
