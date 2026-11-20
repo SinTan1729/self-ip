@@ -246,3 +246,9 @@ Requests without a valid key receive:
 ```text
 401 Unauthorized
 ```
+
+## Tip
+
+Some services like `gluetun` add a `/json` to the end of an `echoip` address and don't support headers. You can make
+them work with `self-ip` by supplying `https://self.domain.tld?api_key=<api_key>&mode=echoip`. In `echoip` mode, the
+extra `/json` at the end is automatically filtered out.
