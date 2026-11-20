@@ -5,9 +5,9 @@ on:
     branches:
       - main
     paths:
-      - "**/*.go"
-      - "go.mod"
-      - "go.sum"
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
   pull_request:
   workflow_dispatch:
 
@@ -22,7 +22,8 @@ jobs:
         run: |
           cat > .env <<'EOF'
           API_KEY=dummy_api_key_for_testing
-          SELF_IP_API_KEY=$$argon2id$$v=19$$m=16,t=2,p=1$$ZHNkZHJxd2U$$k5/crDMWiPG24mRfH6eVhg
+          SELF_IP_API_KEY=NLPSiKuhE8Ph7BAgxVQgpAMoqey2piO4YGQYRKP3o4ISD7saL4JJ8WI_MAa3Y2ZhQ7nbTiNoDs_1PTyKuPiFdA
+          SELF_IP_API_KEY_HASH_ALGORITHM=SHA512
           EOF
 
       - uses: actions/setup-go@v7
