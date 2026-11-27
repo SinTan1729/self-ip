@@ -13,7 +13,7 @@ Image=ghcr.io/sintan1729/self-ip:latest
 PublishPort=3213:3213
 AutoUpdate=registry
 # Volumes
-Volume=self-ip:/app/maxmind-databases
+Volume=self-ip:/app/state
 # Environment variables
 # CHANGE IT BEFORE DEPLOYMENT, THIS IS GIBBERISH
 Environment=SELF_IP_API_KEY=YlhMtBSKiSDuu9PiEinQWWA5QcFmoe0Lmar1g2N0m9vwYZoh67XeTTzbl0eKL14FUEjqBJwnr5SUli25wxjuew

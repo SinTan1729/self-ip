@@ -27,7 +27,7 @@ services:
       timeout: 10s
 
     volumes:
-      - self-ip:/app/maxmind-databases
+      - self-ip:/app/state
 
 volumes:
   self-ip:
