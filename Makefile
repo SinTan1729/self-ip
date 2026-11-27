@@ -9,7 +9,8 @@ build:
 	go build -o ${PKGNAME}
 
 test:
-	go test ./handlers
+	rm -f ./state/banManager.gob
+	go test -count=1 ./handlers
 
 run: build
 	SELF_IP_API_KEY='$(SELF_IP_API_KEY)' SELF_IP_API_KEY_HASH_ALGORITHM='SHA512' \

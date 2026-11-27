@@ -10,9 +10,10 @@ import (
 	"time"
 )
 
-type Mode uint
+type Mode int
 
 const (
+	BadMode   Mode = -1
 	Default   Mode = 0
 	IPOnly    Mode = 1
 	Short     Mode = 2

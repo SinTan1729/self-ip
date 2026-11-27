@@ -59,10 +59,7 @@ func PublicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	case "", "default":
 		mode = i.Default
 	default:
-		log.Println(i.LogText(clientIP, mode, queryIP, i.BadAttempt))
-		appData.BanManager.ProcessBan(clientIP)
-		http.Error(w, "400 Bad Request", http.StatusBadRequest)
-		return
+		mode = i.BadMode
 	}
 	if appData.BanManager.IsBanned(clientIP) {
 		log.Println(i.LogText(clientIP, mode, queryIP, i.BadAttempt))
@@ -70,7 +67,7 @@ func PublicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 		http.Error(w, "429 Too Many Requests", http.StatusTooManyRequests)
 		return
 	}
-	if badIP {
+	if badIP || mode == i.BadMode {
 		log.Println(i.LogText(clientIP, mode, queryIP, i.BadAttempt))
 		appData.BanManager.ProcessBan(clientIP)
 		http.Error(w, "400 Bad Request", http.StatusBadRequest)
