@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Sayantan Santra <sayantan.santra689@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-only
+
 package main
 
 import (
@@ -67,8 +70,9 @@ func main() {
 	}
 
 	appData := i.AppData{
-		Databases: databases,
-		Proxies:   trustedProxies,
+		Databases:  databases,
+		Proxies:    trustedProxies,
+		BadManager: i.InitBanManager(),
 	}
 	appData.Config.ApiKeys = make(map[string]struct{})
 	for key := range strings.SplitSeq(apiKey, ",") {

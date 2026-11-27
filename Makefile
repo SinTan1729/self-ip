@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Sayantan Santra <sayantan.santra689@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-only
+
 PKGNAME := self-ip
 GIT_VERSION :=  $(shell git describe --tags --abbrev=0)
 include .env

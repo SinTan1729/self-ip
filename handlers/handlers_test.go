@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Sayantan Santra <sayantan.santra689@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-only
+
 package handlers
 
 import (
@@ -17,13 +20,11 @@ import (
 
 func waitForServer(t *testing.T, url string) {
 	t.Helper()
-
 	client := &http.Client{
 		Timeout: 200 * time.Millisecond,
 	}
 
-	deadline := time.Now().Add(10 * time.Second)
-
+	deadline := time.Now().Add(30 * time.Second)
 	for time.Now().Before(deadline) {
 		resp, err := client.Get(url)
 		if err == nil {

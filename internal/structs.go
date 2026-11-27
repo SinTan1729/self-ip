@@ -1,8 +1,13 @@
+// SPDX-FileCopyrightText: 2026 Sayantan Santra <sayantan.santra689@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-only
+
 package internal
 
 import (
 	"math/big"
 	"net/netip"
+	"sync"
+	"time"
 )
 
 type Mode uint
@@ -24,8 +29,9 @@ type AppData struct {
 		EnableHostName    bool
 		EnablePortChecker bool
 	}
-	Proxies []netip.Prefix
-	OwnIP   []netip.Addr
+	Proxies    []netip.Prefix
+	OwnIP      []netip.Addr
+	BadManager *banManager
 }
 
 type names struct {
@@ -209,4 +215,23 @@ var EUCountries = []string{
 	"AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR",
 	"DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL",
 	"PL", "PT", "RO", "SK", "SI", "ES", "SE",
+}
+
+type banRecord struct {
+	Failures    uint32
+	BanLevel    uint32
+	LastFailed  time.Time
+	BannedUntil time.Time
+}
+
+type banManager struct {
+	mu      sync.RWMutex
+	records map[netip.Addr]*banRecord
+	path    string
+
+	Threshold  uint32
+	BaseDelay  time.Duration
+	Multiplier uint32
+	MaxDelay   time.Duration
+	ResetAfter time.Duration
 }

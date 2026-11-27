@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 Sayantan Santra <sayantan.santra689@gmail.com> -->
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+
 # Self IP
 
 A small self-hosted IP geolocation and port checking API written in Go.
