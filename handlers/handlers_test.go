@@ -99,19 +99,26 @@ func TestServer(t *testing.T) {
 	client := newClient(t)
 
 	status, resp := getResp(t, client, "http://localhost:3213?ip=85.214.143.21&mode=short")
-	assert.Equal(t, status, 200)
-	assert.Equal(t, resp["ip"], "85.214.143.21")
-	assert.Equal(t, resp["country"], "Germany")
+	assert.Equal(t, 200, status)
+	assert.Equal(t, "85.214.143.21", resp["ip"])
+	assert.Equal(t, "Germany", resp["country"])
 
 	status, resp = getResp(t, client, "http://localhost:3213?ip=85.214.143.21&mode=echoip")
-	assert.Equal(t, resp["asn"], "A6724")
-	assert.Equal(t, resp["user_agent"].(map[string]any)["product"], "Mozilla")
+	assert.Equal(t, "A6724", resp["asn"])
+	assert.Equal(t, "Mozilla", resp["user_agent"].(map[string]any)["product"])
 
 	status, resp = getResp(t, client, "http://localhost:3213?ip=1.1.1.1&mode=full")
-	assert.Equal(t, resp["registered_country"].(map[string]any)["iso_code"], "AU")
-	assert.Equal(t, resp["hostname"], "one.one.one.one")
+	assert.Equal(t, "AU", resp["registered_country"].(map[string]any)["iso_code"])
+	assert.Equal(t, "one.one.one.one", resp["hostname"])
 
 	status, resp = getResp(t, client, "http://localhost:3213/portcheck?ip=8.8.8.8&port=53")
-	assert.Equal(t, resp["reachable"], true)
-	assert.Equal(t, resp["port"], 53.0)
+	assert.Equal(t, true, resp["reachable"])
+	assert.Equal(t, 53.0, resp["port"])
+
+	for range 5 {
+		status, resp = getResp(t, client, "http://localhost:3213?ip=85.214.143.21&mode=bad")
+		assert.Equal(t, 400, status)
+	}
+	status, resp = getResp(t, client, "http://localhost:3213?ip=85.214.143.21&mode=bad")
+	assert.Equal(t, 429, status)
 }
