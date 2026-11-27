@@ -69,10 +69,18 @@ func main() {
 		log.Println("Using trusted proxies:", i.PrettyPrintArray(trustedProxies))
 	}
 
+	var banManager *i.BanManager
+	if b, err := i.InitBanManager(); err == nil {
+		log.Println("Initiated rate limiter.")
+		banManager = b
+	} else {
+		log.Fatal("Failed to initiate rate limiter.", err)
+	}
+
 	appData := i.AppData{
 		Databases:  databases,
 		Proxies:    trustedProxies,
-		BadManager: i.InitBanManager(),
+		BanManager: banManager,
 	}
 	appData.Config.ApiKeys = make(map[string]struct{})
 	for key := range strings.SplitSeq(apiKey, ",") {

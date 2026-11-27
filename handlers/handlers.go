@@ -60,17 +60,26 @@ func PublicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 		mode = i.Default
 	default:
 		log.Println(i.LogText(clientIP, mode, queryIP, i.BadAttempt))
+		appData.BanManager.ProcessBan(clientIP)
 		http.Error(w, "400 Bad Request", http.StatusBadRequest)
+		return
+	}
+	if appData.BanManager.IsBanned(clientIP) {
+		log.Println(i.LogText(clientIP, mode, queryIP, i.BadAttempt))
+		appData.BanManager.ProcessBan(clientIP)
+		http.Error(w, "429 Too Many Requests", http.StatusTooManyRequests)
 		return
 	}
 	if badIP {
 		log.Println(i.LogText(clientIP, mode, queryIP, i.BadAttempt))
+		appData.BanManager.ProcessBan(clientIP)
 		http.Error(w, "400 Bad Request", http.StatusBadRequest)
 		return
 	}
 
 	if !i.CheckAuth(appData.Config.ApiKeys, appData.Config.ApiKeyHashAlg, r.Header.Get("X-API-Key"), url.Query().Get("api_key")) {
 		log.Println(i.LogText(clientIP, mode, queryIP, i.Unauthorized))
+		appData.BanManager.ProcessBan(clientIP)
 		w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
 		http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 		return
@@ -88,6 +97,7 @@ func PublicHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	}
 
 	log.Println(i.LogText(clientIP, mode, queryIP, i.GoodAttempt))
+	appData.BanManager.Reset(clientIP)
 	fmt.Fprintf(w, "%s", data)
 }
 
@@ -130,14 +140,22 @@ func PortHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 		logAddress = fmt.Sprintf(":%d", port)
 	}
 
+	if appData.BanManager.IsBanned(clientIP) {
+		log.Println(i.LogText(clientIP, mode, queryIP, i.BadAttempt))
+		appData.BanManager.ProcessBan(clientIP)
+		http.Error(w, "429 Too Many Requests", http.StatusTooManyRequests)
+		return
+	}
 	if !i.CheckAuth(appData.Config.ApiKeys, appData.Config.ApiKeyHashAlg, r.Header.Get("X-API-Key"), url.Query().Get("api_key")) {
 		log.Println(i.LogText(clientIP, mode, logAddress, i.Unauthorized))
+		appData.BanManager.ProcessBan(clientIP)
 		w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
 		http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 		return
 	}
 	if badRequest != "" {
 		log.Println(i.LogText(clientIP, mode, logAddress, i.BadAttempt))
+		appData.BanManager.ProcessBan(clientIP)
 		http.Error(w, "400 Bad Request: "+badRequest, http.StatusBadRequest)
 		return
 	}
@@ -171,6 +189,7 @@ func PortHandler(w http.ResponseWriter, r *http.Request, appData *i.AppData) {
 	}
 
 	log.Println(i.LogText(clientIP, mode, logAddress, i.GoodAttempt))
+	appData.BanManager.Reset(clientIP)
 	fmt.Fprint(w, string(jsonData))
 }
 

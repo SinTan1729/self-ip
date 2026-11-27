@@ -57,7 +57,7 @@ func (d *DatabaseStore) Close() {
 }
 
 func areDatabasesUsable() bool {
-	f, err := os.ReadFile("./maxmind-databases/version")
+	f, err := os.ReadFile("./state/maxmind-databases/version")
 	dateStr := strings.ReplaceAll(strings.TrimSpace(string(f)), ".", "-")
 	if err == nil {
 		if date, err := time.Parse(time.DateOnly, dateStr); err != nil {
@@ -85,13 +85,13 @@ func (d *DatabaseStore) Reload() error {
 	asnCh := make(chan result, 1)
 	go func() {
 		db, err := maxminddb.Open(
-			"./maxmind-databases/GeoLite2-City.mmdb",
+			"./state/maxmind-databases/GeoLite2-City.mmdb",
 		)
 		cityCh <- result{city: db, err: err}
 	}()
 	go func() {
 		db, err := maxminddb.Open(
-			"./maxmind-databases/GeoLite2-ASN.mmdb",
+			"./state/maxmind-databases/GeoLite2-ASN.mmdb",
 		)
 		asnCh <- result{asn: db, err: err}
 	}()
@@ -127,7 +127,7 @@ func (d *DatabaseStore) Reload() error {
 
 func GetDatabases() {
 	log.Println("Checking for database updates.")
-	err := os.MkdirAll("./maxmind-databases", 0755)
+	err := os.MkdirAll("./state/maxmind-databases", 0755)
 	Check(err)
 
 	var (
@@ -135,14 +135,14 @@ func GetDatabases() {
 		newVer time.Time
 	)
 
-	if s, err := os.ReadFile("./maxmind-databases/version"); err == nil {
+	if s, err := os.ReadFile("./state/maxmind-databases/version"); err == nil {
 		if v, err := time.Parse(time.DateOnly, strings.ReplaceAll(strings.TrimSpace(string(s)), ".", "-")); err == nil {
 			curVer = v
 		}
 	}
 
 	for _, db := range []string{"City", "ASN"} {
-		_, err = os.Stat("./maxmind-databases/GeoLite2-" + db + ".mmdb")
+		_, err = os.Stat("./state/maxmind-databases/GeoLite2-" + db + ".mmdb")
 		if err != nil {
 			curVer = time.Time{}
 		}
@@ -200,7 +200,7 @@ func GetDatabases() {
 			return fmt.Errorf("invalid SHA-256 digest for %s: %w", name, err)
 		}
 
-		tmp := fmt.Sprintf("./maxmind-databases/%s.tmp", name)
+		tmp := fmt.Sprintf("./state/maxmind-databases/%s.tmp", name)
 		verified := false
 		defer func() {
 			if !verified {
@@ -232,7 +232,7 @@ func GetDatabases() {
 		}
 		log.Println("Verified SHA-256 for", name)
 
-		if db, err := maxminddb.Open(fmt.Sprintf("./maxmind-databases/%s.tmp", name)); err == nil {
+		if db, err := maxminddb.Open(fmt.Sprintf("./state/maxmind-databases/%s.tmp", name)); err == nil {
 			err = db.Verify()
 			if err == nil {
 				log.Println("Verified integrity for database", name)
@@ -273,11 +273,11 @@ func GetDatabases() {
 			return
 		}
 	}
-	err = os.WriteFile("./maxmind-databases/version.tmp", []byte(release.TagName), 0644)
+	err = os.WriteFile("./state/maxmind-databases/version.tmp", []byte(release.TagName), 0644)
 	Check(err)
 	files := []string{"GeoLite2-City.mmdb", "GeoLite2-ASN.mmdb", "version"}
 	for _, file := range files {
-		err = os.Rename(fmt.Sprintf("./maxmind-databases/%s.tmp", file), fmt.Sprintf("./maxmind-databases/%s", file))
+		err = os.Rename(fmt.Sprintf("./state/maxmind-databases/%s.tmp", file), fmt.Sprintf("./state/maxmind-databases/%s", file))
 		Check(err)
 	}
 

@@ -31,7 +31,7 @@ type AppData struct {
 	}
 	Proxies    []netip.Prefix
 	OwnIP      []netip.Addr
-	BadManager *banManager
+	BanManager *BanManager
 }
 
 type names struct {
@@ -224,8 +224,9 @@ type banRecord struct {
 	BannedUntil time.Time
 }
 
-type banManager struct {
+type BanManager struct {
 	mu      sync.RWMutex
+	diskMu  sync.Mutex
 	records map[netip.Addr]*banRecord
 	path    string
 
