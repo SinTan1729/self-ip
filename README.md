@@ -25,6 +25,7 @@ IP subnet, so that `self-ip` gets the correct client IP.**
 - Mandatory API key authentication
 - Multiple response modes
 - Configurable IP lookup through a query parameter
+- Rate limiting for bad requests
 
 ## Database Updates
 
