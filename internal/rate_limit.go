@@ -18,10 +18,10 @@ func InitBanManager() (*BanManager, error) {
 		records:    make(map[netip.Addr]*banRecord),
 		path:       "./state/banManager.gob",
 		Threshold:  5,
-		BaseDelay:  5 * time.Second,
+		BaseDelay:  30 * time.Second,
 		Multiplier: 2,
-		MaxDelay:   6 * time.Hour,
-		ResetAfter: 30 * time.Minute,
+		MaxDelay:   7 * 24 * time.Hour,
+		ResetAfter: 24 * time.Hour,
 	}
 
 	if err := b.Sync(false); err != nil {
